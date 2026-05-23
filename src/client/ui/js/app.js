@@ -28,6 +28,12 @@
   const authScreen = $('#auth-screen');
   const mainScreen = $('#main-screen');
 
+  // After splash animation completes (1.5s delay + 2s fade) show auth
+  setTimeout(() => {
+    splashScreen.classList.add('hidden');
+    authScreen.classList.remove('hidden');
+  }, 3600);
+
   // Auth steps
   const authStep1 = $('#auth-step-1');
   const authStepLogin = $('#auth-step-login');
