@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Messenger</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <!-- Auth Screen -->
+  <div id="auth-screen" class="screen">
+    <div class="auth-container">
+      <div class="auth-header">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 48 48" fill="none">
+              <rect x="8" y="16" width="32" height="24" rx="4" stroke="currentColor" stroke-width="2.5"/>
+              <path d="M12 20l12 8 12-8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="36" cy="14" r="6" fill="var(--accent)" opacity="0.9"/>
+              <path d="M34 14h4M36 12v4" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h1>Secure Messenger</h1>
+          <p class="subtitle">End-to-end encrypted · Zero-knowledge authentication</p>
+        </div>
+        <div class="encryption-badge" id="auth-encryption-badge">
+          <span class="lock-icon">&#x1F512;</span>
+          <span class="badge-text">Protocol v1.0</span>
+        </div>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="tab active" data-tab="login">Sign In</button>
+        <button class="tab" data-tab="register">Create Account</button>
+      </div>
+
+      <form id="login-form" class="auth-form active">
+        <div class="input-group">
+          <label for="login-username">Username</label>
+          <input type="text" id="login-username" placeholder="Enter your username" autocomplete="username" required>
+        </div>
+        <div class="input-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn-primary" id="login-btn">
+          <span class="btn-text">Sign In</span>
+          <span class="btn-loader"></span>
+        </button>
+        <p class="auth-error" id="login-error"></p>
+      </form>
+
+      <form id="register-form" class="auth-form">
+        <div class="input-group">
+          <label for="reg-username">Username</label>
+          <input type="text" id="reg-username" placeholder="Choose a username" autocomplete="off" required>
+        </div>
+        <div class="input-group">
+          <label for="reg-password">Master Password</label>
+          <input type="password" id="reg-password" placeholder="Create a strong password" autocomplete="new-password" required>
+        </div>
+        <div class="input-group">
+          <label for="reg-confirm">Confirm Password</label>
+          <input type="password" id="reg-confirm" placeholder="Confirm your password" autocomplete="new-password" required>
+        </div>
+        <div class="password-strength">
+          <div class="strength-bar" id="strength-bar"></div>
+          <span class="strength-text" id="strength-text"></span>
+        </div>
+        <button type="submit" class="btn-primary" id="register-btn">
+          <span class="btn-text">Create Secure Account</span>
+          <span class="btn-loader"></span>
+        </button>
+        <p class="auth-error" id="register-error"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main App Screen -->
+  <div id="main-screen" class="screen hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="user-profile" id="user-profile-btn">
+          <div class="avatar" id="my-avatar">U</div>
+          <div class="user-info">
+            <span class="username" id="my-username">user</span>
+            <span class="status online" id="my-status">Online</span>
+          </div>
+        </div>
+        <div class="sidebar-actions">
+          <button class="icon-btn" id="new-chat-btn" title="New Conversation">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </button>
+          <button class="icon-btn" id="settings-btn" title="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="search-bar">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="search-input" placeholder="Search users...">
+      </div>
+
+      <div class="conversations-list" id="conversations-list">
+        <div class="conversations-header">
+          <span>Conversations</span>
+          <span class="conversation-count" id="conv-count">0</span>
+        </div>
+        <div id="conversation-items"></div>
+      </div>
+    </aside>
+
+    <main class="chat-area" id="chat-area">
+      <div class="chat-placeholder" id="chat-placeholder">
+        <div class="placeholder-icon">
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M32 8a24 24 0 019.6 46.08L32 58l-9.6-3.92A24 24 0 0132 8z"/>
+            <path d="M24 28h16M24 36h12" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Welcome to Secure Messenger</h2>
+        <p>Select a conversation or start a new one.<br>All messages are end-to-end encrypted.</p>
+        <div class="placeholder-badge">
+          <span class="dot"></span> Your connection is secure
+        </div>
+      </div>
+
+      <div class="chat-view hidden" id="chat-view">
+        <div class="chat-header" id="chat-header">
+          <div class="chat-user">
+            <div class="avatar" id="chat-avatar">?</div>
+            <div class="chat-user-info">
+              <span class="chat-username" id="chat-username">User</span>
+              <span class="chat-status" id="chat-status">
+                <span class="encryption-indicator" id="encryption-indicator">
+                  <span class="lock-pulse"></span>
+                  Encrypted
+                </span>
+              </span>
+            </div>
+          </div>
+          <div class="chat-actions">
+            <button class="icon-btn" id="verify-identity-btn" title="Verify Identity">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="messages-container" id="messages-container">
+          <div class="messages-list" id="messages-list"></div>
+        </div>
+
+        <div class="typing-indicator hidden" id="typing-indicator">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-text" id="typing-text">typing...</span>
+        </div>
+
+        <div class="message-input-container" id="message-input-container">
+          <div class="ttl-selector">
+            <button class="ttl-btn" data-ttl="0" title="No self-destruct">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </button>
+            <div class="ttl-options hidden" id="ttl-options">
+              <button data-ttl="0">Off</button>
+              <button data-ttl="5">5s</button>
+              <button data-ttl="30">30s</button>
+              <button data-ttl="300">5m</button>
+              <button data-ttl="3600">1h</button>
+              <button data-ttl="86400">24h</button>
+            </div>
+          </div>
+          <input type="text" id="message-input" placeholder="Type a secure message..." autocomplete="off">
+          <label class="file-btn" title="Send encrypted file">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <input type="file" id="file-input" hidden>
+          </label>
+          <button class="send-btn" id="send-btn" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Identity Verification Modal -->
+  <div class="modal-overlay hidden" id="verify-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Cryptographic Identity Verification</h3>
+        <button class="modal-close" id="verify-modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="verify-info">Compare these safety numbers with <strong id="verify-username">the user</strong> to verify identity.</p>
+        <div class="fingerprint-container" id="fingerprint-container">
+          <div class="fingerprint-row">
+            <span class="fp-label">Your fingerprint</span>
+            <code id="my-fingerprint">---</code>
+          </div>
+          <div class="fingerprint-row">
+            <span class="fp-label">Their fingerprint</span>
+            <code id="their-fingerprint">---</code>
+          </div>
+        </div>
+        <div class="verification-status" id="verification-status">
+          <span class="status-icon">&#x26A0;</span>
+          <span>Not verified — compare fingerprints in person</span>
+        </div>
+        <button class="btn-secondary" id="verify-copy-fp">Copy Their Fingerprint</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay hidden" id="settings-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Settings</h3>
+        <button class="modal-close" id="settings-modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-section">
+          <h4>Account</h4>
+          <p>Username: <strong id="settings-username">---</strong></p>
+          <p>User ID: <code id="settings-userid">---</code></p>
+          <p>Your Fingerprint: <code id="settings-fingerprint">---</code></p>
+        </div>
+        <div class="settings-section">
+          <h4>Session</h4>
+          <button class="btn-secondary" id="logout-btn">Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/crypto-client.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
