@@ -195,16 +195,27 @@
       const a = BigInt('0x' + Array.from(aArr).map(b => b.toString(16).padStart(2, '0')).join(''));
       const g = 5n;
       const N = BigInt('0x' + SRP_PRIME_HEX);
-      const k = BigInt('0x' + await sha256(N.toString(16) + g.toString(16)));
+      const N_bytes_len = 256;
+
+      // k = SHA-256(N_bytes || 0x05) → matches server
+      const N_bytes = bigIntToBytes(N, N_bytes_len);
+      const g_byte = new Uint8Array([5]);
+      const kCombined = new Uint8Array(N_bytes.length + g_byte.length);
+      kCombined.set(N_bytes, 0);
+      kCombined.set(g_byte, N_bytes.length);
+      const kHash = await window.crypto.subtle.digest('SHA-256', kCombined);
+      const k = BigInt('0x' + Array.from(new Uint8Array(kHash)).map(b => b.toString(16).padStart(2, '0')).join(''));
 
       const A_val = modPow(g, a, N);
-      const A_bytes = bigIntToBytes(A_val, 384);
+      const A_bytes = bigIntToBytes(A_val, N_bytes_len);
+      const B = BigInt('0x' + Array.from(B_bytes).map(b => b.toString(16).padStart(2, '0')).join(''));
 
-      const uArr = await sha256(
-        Array.from(A_bytes).map(b => String.fromCharCode(b)).join('') +
-        Array.from(B_bytes).map(b => String.fromCharCode(b)).join('')
-      );
-      const u = BigInt('0x' + uArr);
+      // u = SHA-256(A_256_bytes || B_256_bytes) → matches server
+      const uCombined = new Uint8Array(N_bytes_len + N_bytes_len);
+      uCombined.set(A_bytes, 0);
+      uCombined.set(B_bytes, N_bytes_len);
+      const uHash = await window.crypto.subtle.digest('SHA-256', uCombined);
+      const u = BigInt('0x' + Array.from(new Uint8Array(uHash)).map(b => b.toString(16).padStart(2, '0')).join(''));
 
       const saltBytes = new Uint8Array(salt.match(/.{1,2}/g).map(b => parseInt(b, 16)));
       const upBytes2 = new TextEncoder().encode(username + ':' + password);
@@ -213,17 +224,18 @@
       xCombined.set(upBytes2, saltBytes.length);
       const xArr2 = await window.crypto.subtle.digest('SHA-256', xCombined);
       const x = BigInt('0x' + Array.from(new Uint8Array(xArr2)).map(b => b.toString(16).padStart(2, '0')).join(''));
-      const B = BigInt('0x' + Array.from(B_bytes).map(b => b.toString(16).padStart(2, '0')).join(''));
       const S = modPow((B - k * modPow(g, x, N)) % N, (a + u * x) % N, N);
 
-      const S_bytes = bigIntToBytes(S, 384);
+      // K = SHA-256(S_256_bytes) → matches server
+      const S_bytes = bigIntToBytes(S, N_bytes_len);
       const K_raw = await window.crypto.subtle.digest('SHA-256', S_bytes);
       const K = new Uint8Array(K_raw);
 
-      const m1Combined = new Uint8Array(A_bytes.length + B_bytes.length + K.length);
+      // M1 = SHA-256(A_256_bytes || B_256_bytes || K) → matches server
+      const m1Combined = new Uint8Array(N_bytes_len + N_bytes_len + K.length);
       m1Combined.set(A_bytes, 0);
-      m1Combined.set(B_bytes, A_bytes.length);
-      m1Combined.set(K, A_bytes.length + B_bytes.length);
+      m1Combined.set(B_bytes, N_bytes_len);
+      m1Combined.set(K, N_bytes_len + N_bytes_len);
       const M1_hash = await window.crypto.subtle.digest('SHA-256', m1Combined);
       const M1 = new Uint8Array(M1_hash);
 
