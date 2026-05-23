@@ -139,17 +139,41 @@
                   Encrypted
                 </span>
               </span>
+              <span class="last-seen hidden" id="last-seen"></span>
             </div>
           </div>
           <div class="chat-actions">
+            <button class="icon-btn" id="search-chat-btn" title="Search in conversation">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </button>
+            <button class="icon-btn" id="export-chat-btn" title="Export conversation">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
             <button class="icon-btn" id="verify-identity-btn" title="Verify Identity">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </button>
+            <button class="icon-btn" id="theme-toggle-btn" title="Toggle theme">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
             </button>
           </div>
         </div>
 
+        <div class="chat-search-bar hidden" id="chat-search-bar">
+          <input type="text" id="chat-search-input" placeholder="Search messages...">
+          <button class="icon-btn" id="chat-search-close">&times;</button>
+        </div>
+
         <div class="messages-container" id="messages-container">
           <div class="messages-list" id="messages-list"></div>
+        </div>
+
+        <div class="reaction-picker hidden" id="reaction-picker">
+          <button data-reaction="👍">👍</button>
+          <button data-reaction="❤️">❤️</button>
+          <button data-reaction="😂">😂</button>
+          <button data-reaction="😮">😮</button>
+          <button data-reaction="😢">😢</button>
+          <button data-reaction="🙏">🙏</button>
         </div>
 
         <div class="typing-indicator hidden" id="typing-indicator">

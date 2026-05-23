@@ -1,6 +1,17 @@
 (() => {
   const api = new ApiClient();
-  const crypto = new CryptoClient();
+  const cc = new CryptoClient();
+
+  const SRP_PRIME_HEX =
+    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
+    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
+    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
+    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
+    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
+    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
+    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
+    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF';
+
 
   let ws = null;
   let currentUser = null;
@@ -122,7 +133,7 @@
       const salt = h1.salt;
       const B_bytes = new Uint8Array(h1.B.match(/.{1,2}/g).map(b => parseInt(b, 16)));
 
-      const aArr = crypto.getRandomValues(new Uint8Array(64));
+      const aArr = window.crypto.getRandomValues(new Uint8Array(64));
       const a = BigInt('0x' + Array.from(aArr).map(b => b.toString(16).padStart(2, '0')).join(''));
       const g = 5n;
       const N = BigInt('0x' + SRP_PRIME_HEX);
@@ -173,7 +184,7 @@
   });
 
   async function sha256(str) {
-    const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    const hash = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
     return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
@@ -208,7 +219,7 @@
     } else {
       try {
         const stored = JSON.parse(hasIdentity);
-        crypto.identityKeyPair = await crypto.importPrivateKey(
+        cc.identityKeyPair = await cc.importPrivateKey(
           new Uint8Array(stored.private.match(/.{1,2}/g).map(b => parseInt(b, 16)))
         );
       } catch {
@@ -217,10 +228,10 @@
     }
 
     if (needKeyGen) {
-      const keyPair = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
-      crypto.identityKeyPair = keyPair;
-      const pub = await crypto.getPublicKeyBytes(keyPair);
-      const priv = await crypto.getPrivateKeyBytes(keyPair);
+      const keyPair = await window.crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
+      cc.identityKeyPair = keyPair;
+      const pub = await cc.getPublicKeyBytes(keyPair);
+      const priv = await cc.getPrivateKeyBytes(keyPair);
       localStorage.setItem('identityKey_' + api.userId, JSON.stringify({
         public: Array.from(pub).map(b => b.toString(16).padStart(2, '0')).join(''),
         private: Array.from(priv).map(b => b.toString(16).padStart(2, '0')).join(''),
@@ -228,20 +239,20 @@
     }
 
     // Generate signed prekey and one-time prekeys
-    const spk = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
-    const spkPub = await crypto.getPublicKeyBytes(spk);
-    const spkPriv = await crypto.getPrivateKeyBytes(spk);
+    const spk = await window.crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
+    const spkPub = await cc.getPublicKeyBytes(spk);
+    const spkPriv = await cc.getPrivateKeyBytes(spk);
 
     // Simple signature simulation with SHA-256 (in production use Ed25519)
-    const identityPub = await crypto.getPublicKeyBytes(crypto.identityKeyPair);
+    const identityPub = await cc.getPublicKeyBytes(cc.identityKeyPair);
     const sigInput = Array.from(spkPub).map(b => String.fromCharCode(b)).join('');
     const sigHash = await sha256(sigInput + api.userId);
     const signature = new Uint8Array(sigHash.match(/.{1,2}/g).map(b => parseInt(b, 16)));
 
     const opks = [];
     for (let i = 0; i < 100; i++) {
-      const k = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
-      opks.push(await crypto.getPublicKeyBytes(k));
+      const k = await window.crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
+      opks.push(await cc.getPublicKeyBytes(k));
     }
 
     await api.uploadBundle(identityPub, spkPub, signature, opks);
@@ -336,23 +347,23 @@
   async function decryptIncomingMessage(data) {
     const fromId = data.from;
     const sessionKey = `session_${fromId}`;
-    let session = crypto.sessions.get(sessionKey);
+    let session = cc.sessions.get(sessionKey);
 
     if (!session) {
       const stored = localStorage.getItem(sessionKey);
       if (stored) {
         session = JSON.parse(stored);
-        crypto.sessions.set(sessionKey, session);
+        cc.sessions.set(sessionKey, session);
       }
     }
 
     if (!session) {
       const bundle = await api.getUser(fromId);
-      const theirIdentity = crypto._base64ToBytes(bundle.identity_key);
-      const epKey = crypto._base64ToBytes(data.ratchet_key);
+      const theirIdentity = cc._base64ToBytes(bundle.identity_key);
+      const epKey = cc._base64ToBytes(data.ratchet_key);
 
       const spkPrivHex = localStorage.getItem('signedPrekey_' + api.userId);
-      const spkPriv = await crypto.subtle.importKey(
+      const spkPriv = await window.crypto.subtle.importKey(
         'pkcs8',
         new Uint8Array(spkPrivHex.match(/.{1,2}/g).map(b => parseInt(b, 16))),
         { name: 'X25519' },
@@ -360,9 +371,9 @@
         ['deriveBits']
       );
 
-      const sharedSecret = await crypto.x3dhReceive(
+      const sharedSecret = await cc.x3dhReceive(
         theirIdentity, epKey, data.used_opk_id || -1,
-        { privateKey: spkPriv, publicKey: await crypto.subtle.importKey('raw', crypto._base64ToBytes(bundle.identity_key), { name: 'X25519' }, true, []) },
+        { privateKey: spkPriv, publicKey: await window.crypto.subtle.importKey('raw', cc._base64ToBytes(bundle.identity_key), { name: 'X25519' }, true, []) },
         new Map()
       );
 
@@ -375,20 +386,20 @@
         theirRatchet: epKey,
         ourRatchet: null,
       };
-      crypto.sessions.set(sessionKey, session);
+      cc.sessions.set(sessionKey, session);
       localStorage.setItem(sessionKey, JSON.stringify(session));
     }
 
     // Simplified decryption using shared secret + message key derivation
     const sharedBytes = new Uint8Array(session.sharedSecret.match(/.{1,2}/g).map(b => parseInt(b, 16)));
-    const msgKey = await crypto.hkdf(
+    const msgKey = await cc.hkdf(
       new TextEncoder().encode('SecureMessengerMessageV1'),
       sharedBytes,
       new TextEncoder().encode('msg_' + data.message_number)
     );
 
-    const ct = crypto._base64ToBytes(data.ciphertext);
-    return await crypto.decryptMessage(ct, msgKey);
+    const ct = cc._base64ToBytes(data.ciphertext);
+    return await cc.decryptMessage(ct, msgKey);
   }
 
   function showDeliveryReceipt(toId) {
@@ -518,17 +529,17 @@
           const fromMe = msg.sender_id === api.userId;
           let plaintext = '[encrypted]';
           try {
-            const ct = crypto._base64ToBytes(msg.ciphertext);
+            const ct = cc._base64ToBytes(msg.ciphertext);
             const sessionKey = `session_${fromMe ? msg.recipient_id : msg.sender_id}`;
-            let session = crypto.sessions.get(sessionKey);
+            let session = cc.sessions.get(sessionKey);
             if (session) {
               const sharedBytes = new Uint8Array(session.sharedSecret.match(/.{1,2}/g).map(b => parseInt(b, 16)));
-              const msgKey = await crypto.hkdf(
+              const msgKey = await cc.hkdf(
                 new TextEncoder().encode('SecureMessengerMessageV1'),
                 sharedBytes,
                 new TextEncoder().encode('msg_' + msg.message_number)
               );
-              const decrypted = await crypto.decryptMessage(ct, msgKey);
+              const decrypted = await cc.decryptMessage(ct, msgKey);
               plaintext = new TextDecoder().decode(decrypted);
             }
           } catch {}
@@ -590,10 +601,10 @@
     try {
       // Get or create session
       const sessionKey = `session_${currentConversation}`;
-      let session = crypto.sessions.get(sessionKey);
+      let session = cc.sessions.get(sessionKey);
       if (!session) {
         const bundle = await api.getBundle(currentConversation);
-        const result = await crypto.x3dhInit(bundle);
+        const result = await cc.x3dhInit(bundle);
 
         // Store ephemeral private key for this session
         const sharedHex = Array.from(result.sharedSecret).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -606,7 +617,7 @@
           theirRatchet: Array.from(result.theirIdentityPub).map(b => b.toString(16).padStart(2, '0')).join(''),
           ourRatchet: Array.from(result.ephemeralKey).map(b => b.toString(16).padStart(2, '0')).join(''),
         };
-        crypto.sessions.set(sessionKey, session);
+        cc.sessions.set(sessionKey, session);
         localStorage.setItem(sessionKey, JSON.stringify(session));
       }
 
@@ -614,14 +625,14 @@
       const msgNumber = session.sendCount || 0;
       session.sendCount = msgNumber + 1;
 
-      const msgKey = await crypto.hkdf(
+      const msgKey = await cc.hkdf(
         new TextEncoder().encode('SecureMessengerMessageV1'),
         sharedBytes,
         new TextEncoder().encode('msg_' + msgNumber)
       );
 
       const plaintext = new TextEncoder().encode(text);
-      const ciphertext = await crypto.encryptMessage(plaintext, msgKey);
+      const ciphertext = await cc.encryptMessage(plaintext, msgKey);
 
       const prevCount = 0;
       const ratchetKey = new Uint8Array(session.ourRatchet.match(/.{1,2}/g).map(b => parseInt(b, 16)));
@@ -670,6 +681,7 @@
   function addMessageToUI(msg) {
     const div = document.createElement('div');
     div.className = `message ${msg.isSent ? 'sent' : 'received'}`;
+    div.dataset.msgId = msg.id ? msg.id.substring(0, 8) : 'msg-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
     if (msg.fileId) {
       div.innerHTML = `
         <div class="file-attachment">
@@ -741,15 +753,15 @@
     if (!currentConversation) return;
     verifyModal.classList.remove('hidden');
 
-    const myPub = await crypto.getPublicKeyBytes(crypto.identityKeyPair);
-    const myFp = await crypto.generateFingerprint(myPub);
+    const myPub = await cc.getPublicKeyBytes(cc.identityKeyPair);
+    const myFp = await cc.generateFingerprint(myPub);
 
     let theirFp = '---';
     try {
       const user = await api.getUser(currentConversation);
       if (user.identity_key) {
-        const theirPub = crypto._base64ToBytes(user.identity_key);
-        theirFp = await crypto.generateFingerprint(theirPub);
+        const theirPub = cc._base64ToBytes(user.identity_key);
+        theirFp = await cc.generateFingerprint(theirPub);
       }
     } catch {}
 
@@ -785,8 +797,8 @@
     settingsModal.classList.remove('hidden');
     $('#settings-username').textContent = currentUser.username;
     $('#settings-userid').textContent = currentUser.id;
-    const pub = await crypto.getPublicKeyBytes(crypto.identityKeyPair);
-    const fp = await crypto.generateFingerprint(pub);
+    const pub = await cc.getPublicKeyBytes(cc.identityKeyPair);
+    const fp = await cc.generateFingerprint(pub);
     $('#settings-fingerprint').textContent = fp;
   });
 
@@ -804,7 +816,7 @@
     if (ws) ws.close();
     api.token = null;
     api.userId = null;
-    crypto.sessions.clear();
+    cc.sessions.clear();
     currentConversation = null;
     mainScreen.classList.add('hidden');
     authScreen.classList.remove('hidden');
@@ -850,11 +862,11 @@
 
     try {
       // Generate file encryption key and encrypt locally
-      const fileKey = crypto.getRandomValues(new Uint8Array(32));
+      const fileKey = window.crypto.getRandomValues(new Uint8Array(32));
       const fileData = await file.arrayBuffer();
-      const nonce = crypto.getRandomValues(new Uint8Array(12));
-      const aesKey = await crypto.subtle.importKey('raw', fileKey, { name: 'AES-GCM' }, false, ['encrypt']);
-      const encrypted = await crypto.subtle.encrypt(
+      const nonce = window.crypto.getRandomValues(new Uint8Array(12));
+      const aesKey = await window.crypto.subtle.importKey('raw', fileKey, { name: 'AES-GCM' }, false, ['encrypt']);
+      const encrypted = await window.crypto.subtle.encrypt(
         { name: 'AES-GCM', iv: nonce },
         aesKey,
         fileData
@@ -866,23 +878,23 @@
 
       // Encrypt the file key with the session key
       const sessionKey = `session_${currentConversation}`;
-      let session = crypto.sessions.get(sessionKey);
+      let session = cc.sessions.get(sessionKey);
       if (!session) {
         const bundle = await api.getBundle(currentConversation);
-        const x = await crypto.x3dhInit(bundle);
+        const x = await cc.x3dhInit(bundle);
         const sh = Array.from(x.sharedSecret).map(b => b.toString(16).padStart(2, '0')).join('');
         session = { sharedSecret: sh, sendCount: 0 };
-        crypto.sessions.set(sessionKey, session);
+        cc.sessions.set(sessionKey, session);
       }
 
       const sharedBytes = new Uint8Array(session.sharedSecret.match(/.{1,2}/g).map(b => parseInt(b, 16)));
-      const msgKey = await crypto.hkdf(
+      const msgKey = await cc.hkdf(
         new TextEncoder().encode('SecureMessengerMessageV1'),
         sharedBytes,
         new TextEncoder().encode('file_key_' + Date.now())
       );
 
-      const encryptedKey = await crypto.encryptMessage(fileKey, msgKey);
+      const encryptedKey = await cc.encryptMessage(fileKey, msgKey);
 
       // Upload encrypted file
       const blob = new Blob([encryptedPayload], { type: 'application/octet-stream' });
@@ -920,14 +932,205 @@
     }
   });
 
-  // Hardcoded SRP prime for client
-  const SRP_PRIME_HEX =
-    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
-    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
-    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
-    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
-    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
-    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
-    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF' +
-    'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF';
+  // === FEATURE: Theme Toggle (Light/Dark) ===
+  let isDark = localStorage.getItem('theme') !== 'light';
+  if (!isDark) document.body.classList.add('light');
+  $('#theme-toggle-btn').addEventListener('click', () => {
+    isDark = !isDark;
+    document.body.classList.toggle('light', !isDark);
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  });
+
+  // === FEATURE: Sound Notification ===
+  function playNotificationSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 800;
+      gain.gain.value = 0.1;
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.08);
+      setTimeout(() => {
+        osc.frequency.value = 1000;
+        gain.gain.value = 0.05;
+      }, 80);
+    } catch (e) { /* silently fail */ }
+  }
+
+  // === FEATURE: Message Reactions ===
+  let reactingToMessageId = null;
+
+  // Open reaction picker on double-click or long-press a message
+  messagesList.addEventListener('dblclick', (e) => {
+    const msg = e.target.closest('.message');
+    if (!msg || !msg.dataset.msgId) return;
+    showReactionPicker(msg);
+  });
+
+  function showReactionPicker(msgEl) {
+    const picker = $('#reaction-picker');
+    reactingToMessageId = msgEl.dataset.msgId;
+    const rect = msgEl.getBoundingClientRect();
+    picker.style.bottom = (window.innerHeight - rect.top + 10) + 'px';
+    picker.style.right = 'auto';
+    picker.style.left = Math.min(rect.left + rect.width / 2 - 80, window.innerWidth - 200) + 'px';
+    picker.classList.remove('hidden');
+
+    // Auto-hide after 3s
+    clearTimeout(picker._hideTimer);
+    picker._hideTimer = setTimeout(() => picker.classList.add('hidden'), 3000);
+  }
+
+  $('#reaction-picker').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || !reactingToMessageId) return;
+    const reaction = btn.dataset.reaction;
+    const msg = messagesList.querySelector(`[data-msg-id="${reactingToMessageId}"]`);
+    if (msg) {
+      let reactions = msg.querySelector('.reactions');
+      if (!reactions) {
+        reactions = document.createElement('div');
+        reactions.className = 'reactions';
+        msg.appendChild(reactions);
+      }
+      let existing = reactions.querySelector(`[data-reaction="${reaction}"]`);
+      if (existing) {
+        existing.remove();
+        if (reactions.children.length === 0) reactions.remove();
+      } else {
+        const el = document.createElement('span');
+        el.className = 'reaction active';
+        el.dataset.reaction = reaction;
+        el.textContent = reaction;
+        reactions.appendChild(el);
+      }
+    }
+    $('#reaction-picker').classList.add('hidden');
+    reactingToMessageId = null;
+  });
+
+  // === FEATURE: Export Conversation ===
+  $('#export-chat-btn').addEventListener('click', () => {
+    if (!currentConversation) return;
+    const msgs = messagesList.querySelectorAll('.message:not(.system)');
+    const lines = [`Secure Messenger — Conversation Export`,
+      `Date: ${new Date().toISOString()}`,
+      `Contact: ${chatUsername.textContent}`,
+      `Total messages: ${msgs.length}`,
+      `Encryption: End-to-end encrypted (X25519 + AES-256-GCM)`,
+      `Export includes decrypted content only.`,
+      `==========================================`, ''];
+    msgs.forEach(m => {
+      const isSent = m.classList.contains('sent');
+      const sender = isSent ? 'You' : chatUsername.textContent;
+      const time = m.querySelector('.message-time')?.textContent || '';
+      const text = m.childNodes[0]?.textContent?.trim() || '';
+      const reactions = m.querySelector('.reactions');
+      const reactStr = reactions ? ' [' + Array.from(reactions.querySelectorAll('.reaction')).map(r => r.textContent).join(' ') + ']' : '';
+      lines.push(`[${time}] ${sender}: ${text}${reactStr}`);
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `secure-chat-${chatUsername.textContent}-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // === FEATURE: In-Chat Search ===
+  let searchResults = [];
+  let searchIndex = -1;
+
+  $('#search-chat-btn').addEventListener('click', () => {
+    $('#chat-search-bar').classList.toggle('hidden');
+    if (!$('#chat-search-bar').classList.contains('hidden')) {
+      $('#chat-search-input').focus();
+    }
+  });
+
+  $('#chat-search-close').addEventListener('click', () => {
+    $('#chat-search-bar').classList.add('hidden');
+    clearSearchHighlights();
+  });
+
+  $('#chat-search-input').addEventListener('input', () => {
+    const q = $('#chat-search-input').value.trim().toLowerCase();
+    clearSearchHighlights();
+    if (!q) return;
+    searchResults = [];
+    searchIndex = -1;
+    const msgs = messagesList.querySelectorAll('.message');
+    msgs.forEach(m => {
+      const text = (m.childNodes[0]?.textContent || '').toLowerCase();
+      if (text.includes(q)) {
+        m.classList.add('chat-search-highlight');
+        searchResults.push(m);
+      }
+    });
+    if (searchResults.length > 0) {
+      searchIndex = 0;
+      searchResults[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+
+  function clearSearchHighlights() {
+    messagesList.querySelectorAll('.chat-search-highlight').forEach(m => m.classList.remove('chat-search-highlight'));
+    searchResults = [];
+    searchIndex = -1;
+  }
+
+  // === FEATURE: Last Seen ===
+  function updateLastSeen(userId) {
+    api.getUser(userId).then(u => {
+      const el = $('#last-seen');
+      if (u.last_online) {
+        const d = new Date(u.last_online);
+        const now = new Date();
+        const diff = (now - d) / 1000;
+        let label = '';
+        if (diff < 60) label = 'Just now';
+        else if (diff < 3600) label = `${Math.floor(diff/60)}m ago`;
+        else if (diff < 86400) label = `${Math.floor(diff/3600)}h ago`;
+        else label = d.toLocaleDateString();
+        el.textContent = `Last seen ${label}`;
+        el.classList.remove('hidden');
+      }
+    }).catch(() => {});
+  }
+
+  // Update last seen when conversation opens
+  const origOpenConv = openConversation;
+  openConversation = function(user) {
+    origOpenConv(user);
+    updateLastSeen(user.id);
+  };
+
+  // === FEATURE: Sound on new message (when not focused) ===
+  let windowFocused = true;
+  window.addEventListener('focus', () => { windowFocused = true; });
+  window.addEventListener('blur', () => { windowFocused = false; });
+
+  const origHandleNewMsg = handleNewMessage;
+  handleNewMessage = async function(data) {
+    if (!windowFocused && data.from !== api.userId) {
+      playNotificationSound();
+    }
+    return origHandleNewMsg(data);
+  };
+
+  // === FEATURE: Keyboard shortcut hints ===
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && currentConversation) {
+      e.preventDefault();
+      sendMessage();
+    }
+    if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+      e.preventDefault();
+      $('#search-input').focus();
+    }
+  });
+
 })();
