@@ -225,7 +225,8 @@
       xCombined.set(upBytes2, saltBytes.length);
       const xArr2 = await window.crypto.subtle.digest('SHA-256', xCombined);
       const x = BigInt('0x' + Array.from(new Uint8Array(xArr2)).map(b => b.toString(16).padStart(2, '0')).join(''));
-      const S = modPow((B - k * modPow(g, x, N)) % N, (a + u * x) % N, N);
+      const base = ((B - k * modPow(g, x, N)) % N + N) % N;
+      const S = modPow(base, (a + u * x) % N, N);
 
       // K = SHA-256(S_256_bytes) → matches server
       const S_bytes = bigIntToBytes(S, N_bytes_len);

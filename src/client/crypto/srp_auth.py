@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from cryptography.hazmat.primitives import hashes as crypto_hashes
 
-from src.shared.constants import SRP_GENERATOR, SRP_HASH_ALG
+from src.shared.constants import SRP_GENERATOR, SRP_HASH_ALG, SRP_PRIME_HEX
 
 
 def _H(*args: bytes) -> bytes:

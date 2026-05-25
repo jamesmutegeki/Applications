@@ -16,3 +16,13 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Override database_url from plain DATABASE_URL if present (Render provides this)
+import os
+if "DATABASE_URL" in os.environ:
+    raw = os.environ["DATABASE_URL"]
+    if raw.startswith("postgres://"):
+        raw = raw.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif raw.startswith("postgresql://"):
+        raw = raw.replace("postgresql://", "postgresql+asyncpg://", 1)
+    settings.database_url = raw
