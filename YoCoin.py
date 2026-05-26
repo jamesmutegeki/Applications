@@ -1710,22 +1710,16 @@ def admin_bulk_action():
 def admin_reports():
     cursor = mysql.connection.cursor()
     try:
-        cursor.execute('''
-            SELECT COUNT(*) as total, SUM(amount) as total_amount FROM loans
-        ''')
+        cursor.execute('SELECT COUNT(*) as total, SUM(amount) as total_amount FROM loans')
         loan_stats = cursor.fetchone()
-        cursor.execute('''
-            SELECT status, COUNT(*) as cnt, SUM(amount) as total FROM loans GROUP BY status
-        ''')
+        cursor.execute('SELECT status, COUNT(*) as cnt, SUM(amount) as total FROM loans GROUP BY status')
         loan_by_status = cursor.fetchall()
         cursor.execute('''
             SELECT DATE(application_date) as date, COUNT(*) as cnt, SUM(amount) as total
-            FROM loans GROUP BY DATE(application_date) ORDER BY date DESC LIMIT 30
+            FROM loans GROUP BY DATE(application_date) ORDER BY date ASC LIMIT 30
         ''')
         loan_trend = cursor.fetchall()
-        cursor.execute('''
-            SELECT kyc_status, COUNT(*) as cnt FROM users GROUP BY kyc_status
-        ''')
+        cursor.execute('SELECT kyc_status, COUNT(*) as cnt FROM users GROUP BY kyc_status')
         kyc_stats = cursor.fetchall()
         cursor.execute('''
             SELECT u.region, COUNT(*) as users, AVG(u.credit_score) as avg_score
@@ -1737,10 +1731,58 @@ def admin_reports():
             FROM admin_notifications
         ''')
         notif_stats = cursor.fetchone()
+
+        cursor.execute('SELECT COUNT(*) FROM users')
+        total_users = cursor.fetchone()['COUNT(*)']
+
+        cursor.execute('SELECT COUNT(*) FROM blockchain_blocks')
+        total_blocks = cursor.fetchone()['COUNT(*)']
+
+        cursor.execute('''
+            SELECT DATE(disbursement_date) as date, SUM(amount) as total
+            FROM loans WHERE status = 'disbursed' AND disbursement_date IS NOT NULL
+            GROUP BY DATE(disbursement_date) ORDER BY date ASC LIMIT 30
+        ''')
+        disbursement_trend = cursor.fetchall()
+
+        cursor.execute('''
+            SELECT DATE(payment_date) as date, SUM(amount) as total
+            FROM loan_repayments WHERE payment_date IS NOT NULL
+            GROUP BY DATE(payment_date) ORDER BY date ASC LIMIT 30
+        ''')
+        repayment_trend = cursor.fetchall()
+
+        cursor.execute('''
+            SELECT FLOOR(credit_score / 50) * 50 as bucket, COUNT(*) as cnt
+            FROM users GROUP BY bucket ORDER BY bucket
+        ''')
+        score_dist = cursor.fetchall()
+
+        cursor.execute('''
+            SELECT DATE(created_at) as date, COUNT(*) as cnt
+            FROM mobile_money_transactions
+            GROUP BY DATE(created_at) ORDER BY date ASC LIMIT 30
+        ''')
+        mobile_trend = cursor.fetchall()
+
+        cursor.execute('''
+            SELECT DATE(registration_date) as date, COUNT(*) as cnt
+            FROM users GROUP BY DATE(registration_date) ORDER BY date ASC LIMIT 30
+        ''')
+        user_registration_trend = cursor.fetchall()
+
     finally:
         cursor.close()
-    return render_template('admin_reports.html', loan_stats=loan_stats, loan_by_status=loan_by_status,
-                          loan_trend=loan_trend, kyc_stats=kyc_stats, region_stats=region_stats, notif_stats=notif_stats)
+
+    return render_template('admin_reports.html',
+        loan_stats=loan_stats, loan_by_status=loan_by_status,
+        loan_trend=loan_trend, kyc_stats=kyc_stats,
+        region_stats=region_stats, notif_stats=notif_stats,
+        total_users=total_users, total_blocks=total_blocks,
+        disbursement_trend=disbursement_trend,
+        repayment_trend=repayment_trend, score_dist=score_dist,
+        mobile_trend=mobile_trend,
+        user_registration_trend=user_registration_trend)
 
 @app.route('/support', methods=['GET', 'POST'])
 @login_required

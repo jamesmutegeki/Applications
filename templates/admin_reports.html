@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
-{% block title %}Reports & Analytics - YoCoin{% endblock %}
+{% block title %}Analytics - YoCoin{% endblock %}
 {% block styles %}
 <style>
 main.container { max-width: 100% !important; padding-left: 24px; padding-right: 24px; }
+.chart-box { position: relative; height: 280px; width: 100%; }
 </style>
 {% endblock %}
 {% block content %}
@@ -10,38 +11,250 @@ main.container { max-width: 100% !important; padding-left: 24px; padding-right: 
 <div class='col-12'>
 <div class='card p-4 mt-4'>
 <div class='d-flex justify-content-between align-items-center mb-3'>
-<h3 class='fw-bold mb-0'><i class='bi bi-bar-chart me-2' style='color:var(--p)'></i>Reports & Analytics</h3>
+<h3 class='fw-bold mb-0'><i class='bi bi-bar-chart me-2' style='color:var(--p)'></i>Analytics</h3>
 <a href='{{ url_for("admin_dashboard") }}' class='btn btn-outline-secondary btn-sm'>Back</a>
 </div>
+
 <div class='row g-3 mb-4'>
-<div class='col-md-4'><div class='card p-3 text-center'><div class='text-muted small'>Total Loans</div><div class='fw-bold fs-3' style='color:var(--p)'>{{ loan_stats.total or 0 }}</div></div></div>
-<div class='col-md-4'><div class='card p-3 text-center'><div class='text-muted small'>Total Loan Value</div><div class='fw-bold fs-5'>{{ '{:,.0f}'.format(loan_stats.total_amount or 0) }} UGX</div></div></div>
-<div class='col-md-4'><div class='card p-3 text-center'><div class='text-muted small'>Notifications</div><div class='fw-bold fs-5'>{{ notif_stats.unread or 0 }} unread / {{ notif_stats.total or 0 }} total</div></div></div>
+<div class='col-md-3'><div class='card p-3 text-center h-100'><div class='text-muted small'>Total Users</div><div class='fw-bold fs-3' style='color:var(--p)'>{{ total_users or 0 }}</div></div></div>
+<div class='col-md-3'><div class='card p-3 text-center h-100'><div class='text-muted small'>Total Loans</div><div class='fw-bold fs-3' style='color:var(--p)'>{{ loan_stats.total or 0 }}</div></div></div>
+<div class='col-md-3'><div class='card p-3 text-center h-100'><div class='text-muted small'>Total Value</div><div class='fw-bold fs-5'>{{ '{:,.0f}'.format(loan_stats.total_amount or 0) }} UGX</div></div></div>
+<div class='col-md-3'><div class='card p-3 text-center h-100'><div class='text-muted small'>Blockchain Blocks</div><div class='fw-bold fs-3' style='color:var(--p)'>{{ total_blocks or 0 }}</div></div></div>
 </div>
-<h5 class='fw-bold mb-3'>Loans by Status</h5>
-<div class='table-responsive mb-4'><table class='table table-sm'>
+
+<div class='row g-3 mb-4'>
+<div class='col-md-6'>
+<div class='card p-3 h-100'>
+<h6 class='fw-bold mb-3'><i class='bi bi-pie-chart me-1'></i>Loan Status Distribution</h6>
+<div class='chart-box'><canvas id='loanStatusChart'></canvas></div>
+</div>
+</div>
+<div class='col-md-6'>
+<div class='card p-3 h-100'>
+<h6 class='fw-bold mb-3'><i class='bi bi-people me-1'></i>KYC Status Distribution</h6>
+<div class='chart-box'><canvas id='kycChart'></canvas></div>
+</div>
+</div>
+</div>
+
+<div class='row g-3 mb-4'>
+<div class='col-md-8'>
+<div class='card p-3 h-100'>
+<h6 class='fw-bold mb-3'><i class='bi bi-graph-up me-1'></i>Loan Applications (30 days)</h6>
+<div class='chart-box'><canvas id='loanTrendChart'></canvas></div>
+</div>
+</div>
+<div class='col-md-4'>
+<div class='card p-3 h-100'>
+<h6 class='fw-bold mb-3'><i class='bi bi-bar-chart me-1'></i>Credit Score Distribution</h6>
+<div class='chart-box'><canvas id='scoreDistChart'></canvas></div>
+</div>
+</div>
+</div>
+
+<div class='row g-3 mb-4'>
+<div class='col-md-6'>
+<div class='card p-3 h-100'>
+<h6 class='fw-bold mb-3'><i class='bi bi-cash-stack me-1'></i>Disbursements vs Repayments (30 days)</h6>
+<div class='chart-box'><canvas id='cashFlowChart'></canvas></div>
+</div>
+</div>
+<div class='col-md-6'>
+<div class='card p-3 h-100'>
+<h6 class='fw-bold mb-3'><i class='bi bi-geo-alt me-1'></i>Users by Region</h6>
+<div class='chart-box'><canvas id='regionChart'></canvas></div>
+</div>
+</div>
+</div>
+
+<div class='row g-3 mb-4'>
+<div class='col-md-6'>
+<div class='card p-3 h-100'>
+<h6 class='fw-bold mb-3'><i class='bi bi-phone me-1'></i>Mobile Money Transactions (30 days)</h6>
+<div class='chart-box'><canvas id='mobileChart'></canvas></div>
+</div>
+</div>
+<div class='col-md-6'>
+<div class='card p-3 h-100'>
+<h6 class='fw-bold mb-3'><i class='bi bi-person-plus me-1'></i>User Registrations (30 days)</h6>
+<div class='chart-box'><canvas id='userRegChart'></canvas></div>
+</div>
+</div>
+</div>
+
+<div class='row g-3 mb-4'>
+<div class='col-12'>
+<div class='card p-3'>
+<h6 class='fw-bold mb-3'>Loans by Status</h6>
+<div class='table-responsive'>
+<table class='table table-sm align-middle mb-0'>
 <thead><tr><th>Status</th><th>Count</th><th>Total Amount</th><th>% of Total</th></tr></thead>
 <tbody>{% for s in loan_by_status %}
-<tr><td><span class='badge bg-{{ "success" if s.status in ["approved","disbursed","repaid"] else "warning" if s.status == "pending" else "danger" }}'>{{ s.status }}</span></td>
+<tr>
+<td><span class='badge bg-{{ "success" if s.status in ["approved","disbursed","repaid"] else "warning" if s.status == "pending" else "danger" }}'>{{ s.status }}</span></td>
 <td>{{ s.cnt }}</td><td>{{ '{:,.0f}'.format(s.total or 0) }} UGX</td>
-<td>{{ (s.cnt / loan_stats.total * 100)|round(1) if loan_stats.total else 0 }}%</td></tr>{% endfor %}
-</tbody></table></div>
-<h5 class='fw-bold mb-3'>KYC Distribution</h5>
-<div class='row g-3 mb-4'>{% for k in kyc_stats %}
-<div class='col-md-3'><div class='card p-3 text-center'><div class='text-muted small'>{{ k.kyc_status.replace('_',' ').title() }}</div><div class='fw-bold fs-4'>{{ k.cnt }}</div></div></div>{% endfor %}
+<td>{{ (s.cnt / loan_stats.total * 100)|round(1) if loan_stats.total else 0 }}%</td>
+</tr>{% endfor %}
+</tbody></table>
 </div>
-<h5 class='fw-bold mb-3'>Users by Region</h5>
-<div class='table-responsive mb-4'><table class='table table-sm'>
-<thead><tr><th>Region</th><th>Users</th><th>Avg Credit Score</th></tr></thead>
-<tbody>{% for r in region_stats %}
-<tr><td>{{ r.region }}</td><td>{{ r.users }}</td><td>{{ (r.avg_score or 0)|round(0)|int }}</td></tr>{% endfor %}
-</tbody></table></div>
-<h5 class='fw-bold mb-3'>Recent Loan Activity (30 days)</h5>
-{% if loan_trend %}
-<div class='table-responsive'><table class='table table-sm'>
-<thead><tr><th>Date</th><th>Applications</th><th>Total Amount</th></tr></thead>
-<tbody>{% for t in loan_trend %}
-<tr><td>{{ t.date.strftime('%Y-%m-%d') if t.date else '-' }}</td><td>{{ t.cnt }}</td><td>{{ '{:,.0f}'.format(t.total or 0) }} UGX</td></tr>{% endfor %}
-</tbody></table></div>{% else %}<div class='alert alert-info'>No recent activity.</div>{% endif %}
+</div>
+</div>
+</div>
+
 </div></div></div>
+{% endblock %}
+
+{% block scripts %}
+<script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js'></script>
+<script>
+Chart.defaults.color = '#555';
+Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+
+var loanByStatus = {{ loan_by_status | tojson | safe }};
+var kycStats = {{ kyc_stats | tojson | safe }};
+var loanTrend = {{ loan_trend | tojson | safe }};
+var regionStats = {{ region_stats | tojson | safe }};
+var scoreDist = {{ score_dist | tojson | safe }};
+var disbursementTrend = {{ disbursement_trend | tojson | safe }};
+var repaymentTrend = {{ repayment_trend | tojson | safe }};
+var mobileTrend = {{ mobile_trend | tojson | safe }};
+var userRegTrend = {{ user_registration_trend | tojson | safe }};
+
+var COLORS = {
+    green: '#228B22', gold: '#D4A800', red: '#dc3545',
+    blue: '#0d6efd', orange: '#fd7e14', purple: '#6f42c1',
+    teal: '#20c997', pink: '#d63384'
+};
+
+function labels(arr, key) { return arr.map(function(x) { return x[key]; }); }
+function vals(arr, key) { return arr.map(function(x) { return x[key]; }); }
+
+// Loan Status Doughnut
+new Chart(document.getElementById('loanStatusChart'), {
+    type: 'doughnut',
+    data: {
+        labels: labels(loanByStatus, 'status'),
+        datasets: [{
+            data: vals(loanByStatus, 'cnt'),
+            backgroundColor: ['#228B22', '#D4A800', '#dc3545', '#0d6efd', '#6f42c1', '#20c997'],
+            borderWidth: 2
+        }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+});
+
+// KYC Bar Chart
+new Chart(document.getElementById('kycChart'), {
+    type: 'bar',
+    data: {
+        labels: labels(kycStats, 'kyc_status'),
+        datasets: [{
+            label: 'Users',
+            data: vals(kycStats, 'cnt'),
+            backgroundColor: ['#228B22', '#D4A800', '#0d6efd', '#dc3545', '#6f42c1'],
+            borderRadius: 4
+        }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+
+// Loan Trend Line
+new Chart(document.getElementById('loanTrendChart'), {
+    type: 'line',
+    data: {
+        labels: labels(loanTrend, 'date'),
+        datasets: [
+            { label: 'Applications', data: vals(loanTrend, 'cnt'), borderColor: COLORS.blue, backgroundColor: COLORS.blue + '20', fill: true, tension: 0.3, pointRadius: 3 },
+            { label: 'Amount (UGX / 1000)', data: vals(loanTrend, 'total'), borderColor: COLORS.gold, backgroundColor: COLORS.gold + '20', fill: true, tension: 0.3, pointRadius: 3, yAxisID: 'y1' }
+        ]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, position: 'left' }, y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false } } },
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+
+// Score Distribution
+new Chart(document.getElementById('scoreDistChart'), {
+    type: 'bar',
+    data: {
+        labels: scoreDist.map(function(x) { return x.bucket + '-' + (x.bucket + 49); }),
+        datasets: [{
+            label: 'Users',
+            data: vals(scoreDist, 'cnt'),
+            backgroundColor: scoreDist.map(function(x) {
+                if (x.bucket >= 700) return COLORS.green;
+                if (x.bucket >= 600) return COLORS.gold;
+                if (x.bucket >= 500) return COLORS.orange;
+                return COLORS.red;
+            }),
+            borderRadius: 4
+        }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+
+// Cash Flow (Disbursements vs Repayments)
+var cashFlowLabels = disbursementTrend.map(function(x) { return x.date; });
+var disbData = vals(disbursementTrend, 'total');
+var repayData = [];
+var repayMap = {};
+repaymentTrend.forEach(function(x) { repayMap[x.date] = x.total; });
+cashFlowLabels.forEach(function(d) { repayData.push(repayMap[d] || 0); });
+
+new Chart(document.getElementById('cashFlowChart'), {
+    type: 'line',
+    data: {
+        labels: cashFlowLabels,
+        datasets: [
+            { label: 'Disbursements', data: disbData, borderColor: COLORS.red, backgroundColor: COLORS.red + '20', fill: true, tension: 0.3 },
+            { label: 'Repayments', data: repayData, borderColor: COLORS.green, backgroundColor: COLORS.green + '20', fill: true, tension: 0.3 }
+        ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } },
+        scales: { y: { beginAtZero: true } } }
+});
+
+// Region Bar Chart
+new Chart(document.getElementById('regionChart'), {
+    type: 'bar',
+    data: {
+        labels: labels(regionStats, 'region'),
+        datasets: [
+            { label: 'Users', data: vals(regionStats, 'users'), backgroundColor: COLORS.teal, borderRadius: 4, yAxisID: 'y' },
+            { label: 'Avg Score', data: regionStats.map(function(x) { return (x.avg_score || 0).toFixed(0); }), backgroundColor: COLORS.gold, borderRadius: 4, yAxisID: 'y1' }
+        ]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, position: 'left', ticks: { stepSize: 1 } }, y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false } } },
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+
+// Mobile Money Trend
+new Chart(document.getElementById('mobileChart'), {
+    type: 'bar',
+    data: {
+        labels: labels(mobileTrend, 'date'),
+        datasets: [{ label: 'Transactions', data: vals(mobileTrend, 'cnt'), backgroundColor: COLORS.purple, borderRadius: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+
+// User Registration Trend
+new Chart(document.getElementById('userRegChart'), {
+    type: 'line',
+    data: {
+        labels: labels(userRegTrend, 'date'),
+        datasets: [{ label: 'New Users', data: vals(userRegTrend, 'cnt'), borderColor: COLORS.green, backgroundColor: COLORS.green + '20', fill: true, tension: 0.3, pointRadius: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+</script>
 {% endblock %}
