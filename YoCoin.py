@@ -211,6 +211,9 @@ class RepaymentForm(FlaskForm):
     ])
     payment_method = SelectField("Payment Method", validators=[DataRequired()],
         choices=[("mobile_money", "Mobile Money (MTN/Airtel)"), ("bank", "Bank Transfer"), ("cash", "Cash Payment")])
+    payment_provider = SelectField("Provider", validators=[Optional()],
+        choices=[("", "Select provider..."), ("mtn", "MTN Mobile Money"), ("airtel", "Airtel Money"),
+                 ("centenary", "Centenary Bank"), ("stanbic", "Stanbic Bank"), ("equity", "Equity Bank")])
     transaction_reference = StringField('Transaction Reference', validators=[Optional(), Length(max=100)])
     submit = SubmitField("Make Payment")
 
@@ -628,11 +631,25 @@ def repayment():
                 return redirect(url_for("repayment"))
 
             try:
+                provider = form.payment_provider.data or ''
+                payment_method_label = dict(form.payment_method.choices).get(form.payment_method.data, form.payment_method.data)
                 use_api = request.form.get('use_api', 'false').lower() == 'true'
-                if use_api and form.payment_method.data in ('mobile_money', 'mtn', 'airtel'):
+
+                cash_reference = None
+                if form.payment_method.data == 'cash':
+                    cash_ref_num = secrets.token_hex(4).upper()
+                    cash_reference = f'YOC-CASH-{cash_ref_num}'
+                    notify_user(mysql, session['user_id'], 'payment_instruction',
+                        'Cash Payment Reference',
+                        f'Your cash payment reference is {cash_reference}. '
+                        f'Amount: UGX {payment_amount:,.0f}. '
+                        f'Give this reference to the admin when making payment.',
+                        form.loan_id.data)
+                    flash(f'Cash payment reference: {cash_reference}. Show this to the admin.', 'info')
+
+                if use_api and form.payment_method.data == 'mobile_money' and provider in ('mtn', 'airtel'):
                     cursor.execute('SELECT phone FROM users WHERE user_id = %s', (session['user_id'],))
                     user_phone = cursor.fetchone()
-                    provider = 'auto' if form.payment_method.data == 'mobile_money' else form.payment_method.data
                     success, txn_id, message, prov = mobile_money.collect_payment(
                         payment_amount, user_phone['phone'], provider, form.loan_id.data, session['user_id']
                     )
@@ -641,11 +658,13 @@ def repayment():
                         return redirect(url_for("repayment"))
                     flash(f'Payment request sent via {prov.upper()}. Check your phone. Ref: {txn_id[:12]}', 'info')
 
+                stored_method = provider if provider else form.payment_method.data
+
                 repayment_id = generate_user_id()
                 cursor.execute("""
-                    INSERT INTO loan_repayments (repayment_id, loan_id, user_id, amount, due_date, payment_method, payment_date, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, NOW(), "paid")
-                """, (repayment_id, form.loan_id.data, session["user_id"], payment_amount, selected_loan['due_date'], form.payment_method.data))
+                    INSERT INTO loan_repayments (repayment_id, loan_id, user_id, amount, due_date, payment_method, payment_date, status, transaction_reference)
+                    VALUES (%s, %s, %s, %s, %s, %s, NOW(), "paid", %s)
+                """, (repayment_id, form.loan_id.data, session["user_id"], payment_amount, selected_loan['due_date'], stored_method, cash_reference or form.transaction_reference.data or None))
 
                 cursor.execute('UPDATE token_balances SET balance = balance - %s WHERE address = %s',
                               (payment_amount, session["user_id"]))
@@ -683,7 +702,7 @@ def repayment():
                 user_info = cursor.fetchone()
                 notifications.notify_repayment_received(session["user_id"], user_info['email'], user_info['name'], payment_amount, form.loan_id.data)
 
-                log_action(mysql, 'repayment_made', session["user_id"], 'repayment', repayment_id, f'Payment: {payment_amount} UGX for loan {form.loan_id.data[:8]}', request)
+                log_action(mysql, 'repayment_made', session["user_id"], 'repayment', repayment_id, f'Payment: {payment_amount} UGX {payment_method_label} for loan {form.loan_id.data[:8]}', request)
 
                 return redirect(url_for("dashboard"))
             except Exception as e:
