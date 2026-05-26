@@ -643,9 +643,9 @@ def repayment():
 
                 repayment_id = generate_user_id()
                 cursor.execute("""
-                    INSERT INTO loan_repayments (repayment_id, loan_id, user_id, amount, payment_method, payment_date, status)
-                    VALUES (%s, %s, %s, %s, %s, NOW(), "paid")
-                """, (repayment_id, form.loan_id.data, session["user_id"], payment_amount, form.payment_method.data))
+                    INSERT INTO loan_repayments (repayment_id, loan_id, user_id, amount, due_date, payment_method, payment_date, status)
+                    VALUES (%s, %s, %s, %s, %s, %s, NOW(), "paid")
+                """, (repayment_id, form.loan_id.data, session["user_id"], payment_amount, selected_loan['due_date'], form.payment_method.data))
 
                 cursor.execute('UPDATE token_balances SET balance = balance - %s WHERE address = %s',
                               (payment_amount, session["user_id"]))
