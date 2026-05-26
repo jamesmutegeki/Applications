@@ -91,7 +91,16 @@ function toggleProvider() {
 }
 
 function validateAmount(input) {
-    input.value = input.value.replace(/[^0-9.]/g, '');
+    var cursor = input.selectionStart;
+    var len = input.value.length;
+    var raw = input.value.replace(/[^0-9.]/g, '');
+    var parts = raw.split('.');
+    if (parts.length > 2) parts = [parts[0], parts[1]];
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    var formatted = parts.join('.');
+    input.value = formatted;
+    var newLen = formatted.length;
+    input.setSelectionRange(cursor + (newLen - len), cursor + (newLen - len));
 }
 
 document.addEventListener('DOMContentLoaded', function() {
