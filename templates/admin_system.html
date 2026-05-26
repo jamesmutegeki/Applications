@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% block title %}System Health - YoCoin{% endblock %}
+
+{% block styles %}
+<style>
+main.container { max-width: 100% !important; padding-left: 24px; padding-right: 24px; }
+.health-card { transition: all 0.3s ease; }
+.health-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.status-dot.online { background: #28a745; box-shadow: 0 0 6px rgba(40,167,69,0.4); }
+.status-dot.offline { background: #dc3545; box-shadow: 0 0 6px rgba(220,53,69,0.4); }
+.status-dot.warning { background: #ffc107; box-shadow: 0 0 6px rgba(255,193,7,0.4); }
+.progress-thin { height: 6px; border-radius: 3px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class='row'>
+<div class='col-12'>
+<div class='card p-4 mt-4'>
+<div class='d-flex justify-content-between align-items-center mb-3'>
+<div>
+<h3 class='fw-bold mb-1'><i class='bi bi-heart-pulse me-2' style='color:var(--p)'></i>System Health Dashboard</h3>
+<small class='text-muted' id='lastUpdated'>Last updated: just now</small>
+</div>
+<div class='d-flex gap-2 flex-wrap'>
+<button type='button' class='btn btn-outline-success btn-sm' onclick='refreshHealth()'><i class='bi bi-arrow-clockwise me-1'></i>Refresh</button>
+<a href='{{ url_for("admin_monitoring") }}' class='btn btn-outline-secondary btn-sm'><i class='bi bi-shield-exclamation me-1'></i>Monitoring</a>
+<a href='{{ url_for("admin_dashboard") }}' class='btn btn-outline-secondary btn-sm'><i class='bi bi-arrow-left me-1'></i>Admin</a>
+</div>
+</div>
+
+<div class='row g-3 mb-4'>
+<div class='col-md-3'>
+<div class='card p-3 text-center health-card border-start border-4 border-success'>
+<div class='text-muted small'>Total Users</div>
+<div class='fw-bold' style='color:var(--p);font-size:1.6rem'>{{ total_users }}</div>
+</div>
+</div>
+<div class='col-md-3'>
+<div class='card p-3 text-center health-card border-start border-4 border-success'>
+<div class='text-muted small'>Total Loans</div>
+<div class='fw-bold' style='color:var(--p);font-size:1.6rem'>{{ total_loans }}</div>
+</div>
+</div>
+<div class='col-md-3'>
+<div class='card p-3 text-center health-card border-start border-4 border-success'>
+<div class='text-muted small'>Blockchain Blocks</div>
+<div class='fw-bold' style='color:var(--p);font-size:1.6rem'>{{ total_blocks }}</div>
+</div>
+</div>
+<div class='col-md-3'>
+<div class='card p-3 text-center health-card border-start border-4 border-success'>
+<div class='text-muted small'>Audit Log Entries</div>
+<div class='fw-bold' style='color:var(--p);font-size:1.6rem'>{{ total_audit }}</div>
+</div>
+</div>
+</div>
+
+<div class='row g-3 mb-4'>
+<div class='col-md-3'>
+<div class='card p-3 text-center health-card border-start border-4 border-warning'>
+<div class='text-muted small'>Pending Loans</div>
+<div class='fw-bold fs-5' style='color:#D4A800'>{{ pending_loans }}</div>
+</div>
+</div>
+<div class='col-md-3'>
+<div class='card p-3 text-center health-card border-start border-4 border-danger'>
+<div class='text-muted small'>Overdue</div>
+<div class='fw-bold fs-5 text-danger'>{{ overdue_loans }}</div>
+</div>
+</div>
+<div class='col-md-3'>
+<div class='card p-3 text-center health-card border-start border-4 border-danger'>
+<div class='text-muted small'>Defaulted</div>
+<div class='fw-bold fs-5 text-danger'>{{ defaulted_loans }}</div>
+</div>
+</div>
+<div class='col-md-3'>
+<div class='card p-3 text-center health-card border-start border-4 border-info'>
+<div class='text-muted small'>Pending KYC</div>
+<div class='fw-bold fs-5' style='color:#0dcaf0'>{{ pending_kyc }}</div>
+</div>
+</div>
+</div>
+
+<div class='row g-3 mb-4'>
+<div class='col-md-4'>
+<div class='card p-3 health-card'>
+<div class='d-flex justify-content-between align-items-center mb-2'>
+<div class='text-muted small'>Blockchain Integrity</div>
+<span class='badge bg-{{ "success" if chain_valid else "danger" }}' id='chainBadge'>{% if chain_valid %}<i class='bi bi-check-circle me-1'></i>Valid{% else %}<i class='bi bi-x-circle me-1'></i>Invalid{% endif %}</span>
+</div>
+<div class='fw-bold fs-5'>
+{% if chain_valid %}
+<span class='text-success'><i class='bi bi-shield-check me-1'></i>Verified</span>
+{% else %}
+<span class='text-danger'><i class='bi bi-shield-exclamation me-1'></i>Compromised</span>
+{% endif %}
+</div>
+</div>
+</div>
+<div class='col-md-4'>
+<div class='card p-3 health-card'>
+<div class='d-flex justify-content-between align-items-center mb-2'>
+<div class='text-muted small'>Loan Volume</div>
+<span class='text-muted small'>Total issued</span>
+</div>
+<div class='fw-bold fs-5' style='color:var(--p)'>{{ '{:,.0f}'.format(total_volume) }} UGX</div>
+</div>
+</div>
+<div class='col-md-4'>
+<div class='card p-3 health-card'>
+<div class='d-flex justify-content-between align-items-center mb-2'>
+<div class='text-muted small'>Token Economy</div>
+<span class='text-muted small'>Total in circulation</span>
+</div>
+<div class='fw-bold fs-5' style='color:#D4A800'>{{ '{:,.0f}'.format(total_balance) }} YC</div>
+</div>
+</div>
+</div>
+
+<div class='card p-3 mb-4' style='background:var(--g1);border:none;'>
+<h6 class='fw-bold mb-3'><i class='bi bi-activity me-1' style='color:var(--p)'></i>Server Health</h6>
+<div class='row g-3'>
+<div class='col-md-3'>
+<div class='d-flex align-items-center gap-2 mb-2'>
+<span class='status-dot online'></span><strong>Server Uptime</strong>
+</div>
+<div class='fw-bold' style='font-size:1.1rem'>{{ uptime }}</div>
+</div>
+<div class='col-md-3'>
+<div class='d-flex align-items-center gap-2 mb-2'>
+<span class='status-dot {{ "online" if cpu_percent < 70 else "warning" if cpu_percent < 90 else "offline" }}'></span><strong>CPU</strong>
+</div>
+<div class='fw-bold' style='font-size:1.1rem'>{{ cpu_percent }}%</div>
+<div class='progress progress-thin mt-1'>
+<div class='progress-bar bg-{{ "success" if cpu_percent < 70 else "warning" if cpu_percent < 90 else "danger" }}' style='width:{{ cpu_percent }}%'></div>
+</div>
+</div>
+<div class='col-md-3'>
+<div class='d-flex align-items-center gap-2 mb-2'>
+<span class='status-dot online'></span><strong>Memory</strong>
+</div>
+<div class='small'>{{ memory_usage }}</div>
+</div>
+<div class='col-md-3'>
+<div class='d-flex align-items-center gap-2 mb-2'>
+<span class='status-dot online'></span><strong>Disk</strong>
+</div>
+<div class='small'>{{ disk_usage }}</div>
+</div>
+</div>
+</div>
+
+<div class='row g-3 mb-4'>
+<div class='col-md-6'>
+<div class='card p-3 health-card'>
+<h6 class='fw-bold mb-3'><i class='bi bi-database me-1' style='color:var(--p)'></i>Database Connectivity</h6>
+<div id='dbHealthStatus'>
+<div class='d-flex align-items-center gap-2 mb-2'>
+<span class='status-dot online' id='dbStatusDot'></span>
+<span class='fw-bold' id='dbStatusText'>Connected</span>
+<small class='text-muted'>(MySQL - {{ db_host }})</small>
+</div>
+<div class='small text-muted'>Connection pool: active</div>
+</div>
+</div>
+</div>
+<div class='col-md-6'>
+<div class='card p-3 health-card'>
+<h6 class='fw-bold mb-3'><i class='bi bi-globe me-1' style='color:var(--p)'></i>API Endpoints Status</h6>
+<div id='apiHealthStatus'>
+<div class='d-flex align-items-center gap-2 mb-1'>
+<span class='status-dot online' id='apiMainDot'></span>
+<span class='fw-bold'>Main App</span>
+<span class='badge bg-success ms-auto' id='apiMainStatus'>Healthy</span>
+</div>
+<div class='d-flex align-items-center gap-2 mb-1'>
+<span class='status-dot online' id='apiFeatureDot'></span>
+<span class='fw-bold'>Feature API</span>
+<span class='badge bg-success ms-auto' id='apiFeatureStatus'>Healthy</span>
+</div>
+<div class='d-flex align-items-center gap-2'>
+<span class='status-dot online' id='apiBlockchainDot'></span>
+<span class='fw-bold'>Blockchain</span>
+<span class='badge bg-{{ "success" if chain_valid else "danger" }} ms-auto' id='apiBlockchainStatus'>{% if chain_valid %}Valid{% else %}Invalid{% endif %}</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class='card p-3' style='background:var(--g1);border:none;'>
+<h6 class='fw-bold mb-3'><i class='bi bi-info-circle me-1' style='color:var(--p)'></i>System Information</h6>
+<div class='row'>
+<div class='col-md-6'>
+<ul class='list-unstyled mb-0 small'>
+<li class='mb-1'><strong>Database:</strong> MySQL ({{ db_host }})</li>
+<li class='mb-1'><strong>Framework:</strong> Flask {{ flask_version }}</li>
+<li class='mb-1'><strong>Python:</strong> {{ python_version }}</li>
+<li class='mb-1'><strong>KYC Documents:</strong> {{ total_kyc }} total</li>
+</ul>
+</div>
+<div class='col-md-6'>
+<ul class='list-unstyled mb-0 small'>
+<li class='mb-1'><strong>Session:</strong> Secure cookies (HttpOnly, SameSite)</li>
+<li class='mb-1'><strong>CSRF:</strong> {{ "Enabled" if csrf_enabled else "Disabled" }}</li>
+<li class='mb-1'><strong>Rate Limiting:</strong> Enabled (Flask-Limiter)</li>
+<li class='mb-1'><strong>Notifications:</strong> {{ total_notifs }} sent</li>
+</ul>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function refreshHealth() {
+  var btn = document.querySelector('[onclick="refreshHealth()"]');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Refreshing...'; }
+  fetch('/api/system-health').then(function(r){return r.json()}).then(function(data){
+    document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+    if (document.getElementById('chainBadge')) {
+      document.getElementById('chainBadge').className = 'badge bg-' + (data.chain_valid ? 'success' : 'danger');
+      document.getElementById('chainBadge').innerHTML = data.chain_valid ? '<i class="bi bi-check-circle me-1"></i>Valid' : '<i class="bi bi-x-circle me-1"></i>Invalid';
+    }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Refresh'; }
+  }).catch(function(){
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Refresh'; }
+  });
+  fetch('/api/feature-status').then(function(r){return r.json()}).then(function(data){
+    ['Main','Feature','Blockchain'].forEach(function(name){
+      var dot = document.getElementById('api' + name + 'Dot');
+      var status = document.getElementById('api' + name + 'Status');
+      if (dot) dot.className = 'status-dot online';
+      if (status) { status.className = 'badge bg-success ms-auto'; status.textContent = 'Healthy'; }
+    });
+    if (data.database) {
+      var dbDot = document.getElementById('dbStatusDot');
+      var dbText = document.getElementById('dbStatusText');
+      if (dbDot) dbDot.className = 'status-dot ' + (data.database === 'connected' ? 'online' : 'offline');
+      if (dbText) dbText.textContent = data.database === 'connected' ? 'Connected' : 'Disconnected';
+    }
+    if (data.blockchain) {
+      var bcDot = document.getElementById('apiBlockchainDot');
+      var bcStatus = document.getElementById('apiBlockchainStatus');
+      if (bcDot) bcDot.className = 'status-dot ' + (data.blockchain === 'valid' ? 'online' : 'offline');
+      if (bcStatus) { bcStatus.className = 'badge bg-' + (data.blockchain === 'valid' ? 'success' : 'danger') + ' ms-auto'; bcStatus.textContent = data.blockchain === 'valid' ? 'Valid' : 'Invalid'; }
+    }
+  }).catch(function(){
+    ['dbStatusDot','apiMainDot','apiFeatureDot','apiBlockchainDot'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.className = 'status-dot warning';
+    });
+  });
+}
+setInterval(refreshHealth, 60000);
+</script>
+{% endblock %}

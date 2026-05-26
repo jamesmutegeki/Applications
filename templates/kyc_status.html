@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}KYC Status - YoCoin{% endblock %}
+
+{% block content %}
+<div class='row justify-content-center'>
+<div class='col-lg-8'>
+<div class='card p-4 mt-4'>
+<h3 class='fw-bold mb-4'><i class='bi bi-shield-check me-2' style='color:var(--p)'></i>KYC Status</h3>
+
+<div class='mb-4'>
+<div class='d-flex justify-content-between mb-2'>
+<span>Completion Progress</span>
+<span class='fw-bold'>{{ completion }}%</span>
+</div>
+<div class='progress' style='height: 25px;'>
+<div class='progress-bar bg-{{ "success" if completion >= 100 else "warning" }}' role='progressbar' style='width: {{ completion }}%'>{{ completion }}%</div>
+</div>
+</div>
+
+<div class='mb-4'>
+<h5 class='fw-bold'>Required Documents</h5>
+<div class='row g-3'>
+{% for req in required %}
+<div class='col-md-4'>
+<div class='card p-3 text-center'>
+{% set uploaded = uploaded_docs | selectattr("document_type", "equalto", req) | list %}
+{% if uploaded and uploaded[0].status == 'approved' %}
+<i class='bi bi-check-circle-fill fs-1 text-success'></i>
+{% elif uploaded and uploaded[0].status == 'pending' %}
+<i class='bi bi-clock-fill fs-1 text-warning'></i>
+{% else %}
+<i class='bi bi-exclamation-circle-fill fs-1 text-danger'></i>
+{% endif %}
+<h6 class='mt-2 mb-0'>{{ req.replace('_', ' ').title() }}</h6>
+<small class='text-muted'>
+{% if uploaded and uploaded[0].status == 'approved' %}Approved
+{% elif uploaded and uploaded[0].status == 'pending' %}Pending Review
+{% else %}Not Uploaded{% endif %}
+</small>
+</div>
+</div>
+{% endfor %}
+</div>
+</div>
+
+<div class='mb-4'>
+<h5 class='fw-bold'>Optional Documents</h5>
+<div class='row g-3'>
+<div class='col-md-4'>
+<div class='card p-3 text-center'>
+{% set uploaded = uploaded_docs | selectattr("document_type", "equalto", "utility_bill") | list %}
+{% if uploaded and uploaded[0].status == 'approved' %}
+<i class='bi bi-check-circle-fill fs-1 text-success'></i>
+{% elif uploaded %}
+<i class='bi bi-clock-fill fs-1 text-warning'></i>
+{% else %}
+<i class='bi bi-dash-circle-fill fs-1 text-muted'></i>
+{% endif %}
+<h6 class='mt-2 mb-0'>Proof of Address</h6>
+<small class='text-muted'>Optional</small>
+</div>
+</div>
+</div>
+</div>
+
+{% if kyc_status == 'rejected' %}
+<div class='alert alert-danger'>
+<i class='bi bi-exclamation-triangle me-2'></i>
+Your KYC verification was rejected. Please re-upload your documents.
+</div>
+{% endif %}
+
+<div class='d-flex gap-2'>
+<a href="{{ url_for('kyc_upload') }}" class='btn btn-p'>Upload Documents</a>
+<a href="{{ url_for('dashboard') }}" class='btn btn-outline-secondary'>Back to Dashboard</a>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}

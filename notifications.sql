@@ -1,0 +1,3 @@
+-- Notification tables are now included in YoCoin.sql
+-- Run YoCoin.sql to create all tables including notification_preferences and notification_log
+-- This file is kept for reference only.

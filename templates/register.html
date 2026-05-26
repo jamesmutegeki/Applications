@@ -1,0 +1,150 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}YoCoin - Register{% endblock %}
+
+{% block content %}
+<div class='row justify-content-center'>
+<div class='col-lg-8'>
+<div class='card p-4 mt-4'>
+<div class='text-center mb-4'>
+<div class='logo mx-auto mb-3' style='width:50px;height:50px;'>YC</div>
+<h2 class='fw-bold mb-1'>Create Account</h2>
+<p class='text-muted mb-0'>Join Uganda blockchain-powered microloan platform</p>
+</div>
+<form method='POST' action="{{ url_for('register') }}" novalidate id='registerForm'>{{ form.hidden_tag() }}
+<div class='row'>
+<div class='col-md-6'>
+<h6 class='fw-bold mb-3' style='color:var(--p)'><i class='bi bi-person me-2'></i>Personal</h6>
+<div class='mb-3'>
+<label class='form-label'>Full Name</label>
+{{ form.name(class='form-control fc', placeholder='John Doe', id='regName') }}
+<div class='form-error' id='nameError'>Name must be at least 2 characters</div>
+</div>
+<div class='mb-3'>
+<label class='form-label'>National ID</label>
+{{ form.national_id(class='form-control fc', placeholder='CM914121...', id='regNid') }}
+<div class='form-error' id='nidError'>Enter a valid National ID (min 14 characters)</div>
+</div>
+</div>
+<div class='col-md-6'>
+<h6 class='fw-bold mb-3' style='color:var(--p)'><i class='bi bi-at me-2'></i>Account</h6>
+<div class='mb-3'>
+<label class='form-label'>Email</label>
+{{ form.email(class='form-control fc', placeholder='you@example.com', type='email', id='regEmail') }}
+<div class='form-error' id='emailError'>Enter a valid email address</div>
+</div>
+<div class='mb-3'>
+<label class='form-label'>Phone (+256)</label>
+{{ form.phone(class='form-control fc', placeholder='712345678', id='regPhone') }}
+<div class='form-error' id='phoneError'>Enter valid Uganda phone (e.g., 0712345678)</div>
+</div>
+</div>
+</div>
+<div class='row'>
+<div class='col-md-6'>
+<h6 class='fw-bold mb-3' style='color:var(--p)'><i class='bi bi-geo-alt me-2'></i>Location</h6>
+<div class='mb-3'>
+<label class='form-label'>Region</label>
+{{ form.region(class='form-select fc', id='regRegion') }}
+<div class='form-error' id='regionError'>Please select a region</div>
+</div>
+</div>
+<div class='col-md-6'>
+<h6 class='fw-bold mb-3' style='color:var(--p)'><i class='bi bi-shield-lock me-2'></i>Security</h6>
+<div class='mb-3'>
+<label class='form-label'>Password</label>
+<div class='input-group'>
+{{ form.password(class='form-control fc', type='password', placeholder='Min 8 characters', id='regPassword') }}
+<button class='btn btn-outline-secondary' type='button' onclick='togglePwd("regPassword", this)'><i class='bi bi-eye'></i></button>
+</div>
+<div class='form-error' id='passwordError'>Password must be at least 8 characters</div>
+<div class='mt-2'>
+<div class='progress' style='height:6px'>
+<div class='progress-bar' id='passwordStrength' style='width:0%'></div>
+</div>
+<small class='text-muted' id='strengthText'>Enter a password</small>
+</div>
+</div>
+<div class='mb-3'>
+<label class='form-label'>Confirm Password</label>
+<div class='input-group'>
+{{ form.confirm_password(class='form-control fc', type='password', placeholder='Repeat password', id='regConfirm') }}
+<button class='btn btn-outline-secondary' type='button' onclick='togglePwd("regConfirm", this)'><i class='bi bi-eye'></i></button>
+</div>
+<div class='form-error' id='confirmError'>Passwords do not match</div>
+</div>
+</div>
+</div>
+<div class='form-check mb-4'><input type='checkbox' class='form-check-input' id='terms' name='terms' required><label class='form-check-label' for='terms'>I agree to Terms and Privacy Policy</label>
+<div class='form-error' id='termsError'>You must accept the terms</div>
+</div>
+<div class='d-grid'><button type='submit' class='btn btn-p btn-lg'><i class='bi bi-person-plus me-2'></i>Create Account</button></div>
+</form>
+<div class='text-center mt-4'><p class='text-muted mb-0'>Already have an account? <a href="{{ url_for('login') }}" style='color:var(--p);font-weight:600;'>Sign In</a></p></div>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePwd(id, btn) {
+    var p = document.getElementById(id);
+    p.type = p.type === 'password' ? 'text' : 'password';
+    btn.querySelector('i').classList.toggle('bi-eye');
+    btn.querySelector('i').classList.toggle('bi-eye-slash');
+}
+(function(){
+var form = document.getElementById('registerForm');
+var name = document.getElementById('regName');
+var nid = document.getElementById('regNid');
+var email = document.getElementById('regEmail');
+var phone = document.getElementById('regPhone');
+var region = document.getElementById('regRegion');
+var password = document.getElementById('regPassword');
+var confirm = document.getElementById('regConfirm');
+var terms = document.getElementById('terms');
+
+function showError(input, errorId) {
+    input.classList.add('is-invalid');
+    document.getElementById(errorId).style.display = 'block';
+}
+function clearError(input, errorId) {
+    input.classList.remove('is-invalid');
+    document.getElementById(errorId).style.display = 'none';
+}
+
+password.addEventListener('input', function() {
+    var val = this.value;
+    var bar = document.getElementById('passwordStrength');
+    var text = document.getElementById('strengthText');
+    var score = 0;
+    if (val.length >= 8) score++;
+    if (val.length >= 12) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    var pct = (score / 5) * 100;
+    bar.style.width = pct + '%';
+    if (score <= 1) { bar.className = 'progress-bar bg-danger'; text.textContent = 'Very Weak'; }
+    else if (score === 2) { bar.className = 'progress-bar bg-warning'; text.textContent = 'Weak'; }
+    else if (score === 3) { bar.className = 'progress-bar bg-info'; text.textContent = 'Fair'; }
+    else if (score === 4) { bar.className = 'progress-bar bg-primary'; text.textContent = 'Strong'; }
+    else { bar.className = 'progress-bar bg-success'; text.textContent = 'Very Strong'; }
+});
+
+form.addEventListener('submit', function(e) {
+    var valid = true;
+    if (!name.value || name.value.length < 2) { showError(name, 'nameError'); valid = false; } else { clearError(name, 'nameError'); }
+    if (!nid.value || nid.value.length < 14) { showError(nid, 'nidError'); valid = false; } else { clearError(nid, 'nidError'); }
+    if (!email.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) { showError(email, 'emailError'); valid = false; } else { clearError(email, 'emailError'); }
+    if (!phone.value || !/^(\+256|0)?[78]\d{8}$/.test(phone.value.replace(/\s/g,''))) { showError(phone, 'phoneError'); valid = false; } else { clearError(phone, 'phoneError'); }
+    if (!region.value) { showError(region, 'regionError'); valid = false; } else { clearError(region, 'regionError'); }
+    if (!password.value || password.value.length < 8) { showError(password, 'passwordError'); valid = false; } else { clearError(password, 'passwordError'); }
+    if (password.value !== confirm.value) { showError(confirm, 'confirmError'); valid = false; } else { clearError(confirm, 'confirmError'); }
+    if (!terms.checked) { document.getElementById('termsError').style.display = 'block'; valid = false; } else { document.getElementById('termsError').style.display = 'none'; }
+    if (!valid) e.preventDefault();
+});
+})();
+</script>
+{% endblock %}

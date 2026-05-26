@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Referrals - YoCoin{% endblock %}
+{% block content %}
+<div class='row justify-content-center'>
+<div class='col-lg-8'>
+<div class='card p-4 mt-4'>
+<div class='d-flex justify-content-between align-items-center mb-3'>
+<h3 class='fw-bold mb-0'><i class='bi bi-person-plus me-2' style='color:var(--p)'></i>Referral Program</h3>
+<a href='{{ url_for("dashboard") }}' class='btn btn-outline-secondary btn-sm'>Back</a>
+</div>
+<div class='card p-4 bg-light text-center mb-4'>
+<h5 class='fw-bold mb-2'>Your Referral Code</h5>
+<div class='input-group mb-3' style='max-width:300px;margin:0 auto'>
+<input type='text' class='form-control text-center fw-bold fs-4' value='{{ code }}' readonly id='refCode'>
+<button class='btn btn-p' onclick='navigator.clipboard.writeText(document.getElementById("refCode").value);this.textContent="Copied!"'>Copy</button>
+</div>
+<p class='text-muted small mb-0'>Share this code with friends. When they register using your code, you both get rewarded!</p>
+</div>
+<div class='row g-3 mb-4'>
+<div class='col-md-4'><div class='card p-3 text-center'><div class='text-muted small'>Total Referrals</div><div class='fw-bold fs-3'>{{ referred|length }}</div></div></div>
+<div class='col-md-4'><div class='card p-3 text-center'><div class='text-muted small'>Rewards Earned</div><div class='fw-bold fs-3' style='color:var(--p)'>{{ rewards }}</div></div></div>
+<div class='col-md-4'><div class='card p-3 text-center'><div class='text-muted small'>Reward per Referral</div><div class='fw-bold fs-5'>5,000 UGX</div></div></div>
+</div>
+{% if referred %}
+<h5 class='fw-bold mb-3'>People You Referred</h5>
+<div class='table-responsive'><table class='table'>
+<thead><tr><th>Name</th><th>Email</th><th>Date</th><th>Rewarded</th></tr></thead>
+<tbody>{% for r in referred %}
+<tr><td>{{ r.name }}</td><td>{{ r.email }}</td><td>{{ r.created_at.strftime('%Y-%m-%d') if r.created_at else '-' }}</td>
+<td><span class='badge bg-{{ "success" if r.is_rewarded else "warning" }}'>{{ "Yes" if r.is_rewarded else "Pending" }}</span></td></tr>{% endfor %}
+</tbody></table></div>{% else %}<div class='alert alert-info'>You haven't referred anyone yet. Share your code!</div>{% endif %}
+</div></div></div>
+{% endblock %}

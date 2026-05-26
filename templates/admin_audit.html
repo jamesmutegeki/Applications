@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Audit Log - YoCoin{% endblock %}
+
+{% block styles %}
+<style>
+main.container { max-width: 100% !important; padding-left: 24px; padding-right: 24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class='row'>
+<div class='col-12'>
+<div class='card p-4 mt-4'>
+<div class='d-flex justify-content-between align-items-center mb-3'>
+<h3 class='fw-bold mb-0'><i class='bi bi-journal-text me-2' style='color:var(--p)'></i>Audit Log</h3>
+<a href='{{ url_for("admin_dashboard") }}' class='btn btn-outline-secondary btn-sm'>Back to Admin</a>
+</div>
+
+<div class='row g-2 mb-3'>
+<div class='col-md-4'>
+<div class='input-group'>
+<span class='input-group-text'><i class='bi bi-search'></i></span>
+<input type='text' class='form-control form-control-sm' id='auditSearch' placeholder='Search actions, users...'>
+</div>
+</div>
+<div class='col-md-3'>
+<select class='form-select form-select-sm' id='actionFilter'>
+<option value=''>All Actions</option>
+<option value='user_login'>Login</option>
+<option value='user_logout'>Logout</option>
+<option value='user_registered'>Registration</option>
+<option value='loan_applied'>Loan Applied</option>
+<option value='loan_approved'>Loan Approved</option>
+<option value='loan_rejected'>Loan Rejected</option>
+<option value='repayment_made'>Repayment</option>
+<option value='kyc_uploaded'>KYC Upload</option>
+<option value='kyc_approved'>KYC Approved</option>
+<option value='kyc_rejected'>KYC Rejected</option>
+<option value='profile_updated'>Profile Update</option>
+<option value='password_reset'>Password Reset</option>
+</select>
+</div>
+</div>
+
+{% if logs %}
+<div class='table-responsive'>
+<table class='table align-middle' id='auditTable'>
+<thead>
+<tr>
+<th>Timestamp</th>
+<th>Action</th>
+<th>User</th>
+<th>Entity</th>
+<th>Details</th>
+<th>IP Address</th>
+</tr>
+</thead>
+<tbody>
+{% for log in logs %}
+<tr class='audit-row' data-action='{{ log.action_type }}' data-details='{{ log.action_details or "" }} {{ log.user_id or "" }}'>
+<td><small>{{ log.timestamp.strftime('%Y-%m-%d %H:%M') if log.timestamp else 'N/A' }}</small></td>
+<td><span class='badge bg-primary'>{{ log.action_type }}</span></td>
+<td><small class='text-break'>{{ log.user_id[:8] if log.user_id else 'system' }}</small></td>
+<td>
+{% if log.entity_type and log.entity_id %}
+<small>{{ log.entity_type }}: {{ log.entity_id[:8] if log.entity_id else '' }}</small>
+{% else %}
+<small>-</small>
+{% endif %}
+</td>
+<td><small class='text-break'>{{ log.action_details[:100] if log.action_details else '' }}</small></td>
+<td><small>{{ log.ip_address or '-' }}</small></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+{% if total_pages > 1 %}
+<nav class='mt-3'>
+<ul class='pagination justify-content-center'>
+{% for p in range(1, total_pages + 1) %}
+<li class='page-item {{ "active" if p == page }}'><a class='page-link' href='{{ url_for("admin_audit", page=p) }}'>{{ p }}</a></li>
+{% endfor %}
+</ul>
+</nav>
+{% endif %}
+{% else %}
+<div class='alert alert-info'>No audit logs found.</div>
+{% endif %}
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterAudit() {
+    var q = document.getElementById('auditSearch').value.toLowerCase();
+    var a = document.getElementById('actionFilter').value;
+    document.querySelectorAll('.audit-row').forEach(function(r) {
+        var matchQ = !q || r.dataset.details.toLowerCase().includes(q);
+        var matchA = !a || r.dataset.action === a;
+        r.style.display = (matchQ && matchA) ? '' : 'none';
+    });
+}
+document.getElementById('auditSearch').addEventListener('input', filterAudit);
+document.getElementById('actionFilter').addEventListener('change', filterAudit);
+</script>
+{% endblock %}

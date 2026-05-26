@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Help Center - YoCoin{% endblock %}
+{% block content %}
+<div class='row justify-content-center'>
+<div class='col-lg-8'>
+<div class='card p-4 mt-4'>
+<div class='text-center mb-4'>
+<h3 class='fw-bold mb-0'><i class='bi bi-question-circle me-2' style='color:var(--p)'></i>Help Center</h3>
+<p class='text-muted'>Frequently asked questions and guides</p>
+</div>
+<div class='accordion' id='faqAccordion'>
+<div class='accordion-item'>
+<h2 class='accordion-header'><button class='accordion-button' type='button' data-bs-toggle='collapse' data-bs-target='#faq1'>What is YoCoin?</button></h2>
+<div id='faq1' class='accordion-collapse collapse show' data-bs-parent='#faqAccordion'>
+<div class='accordion-body'>YoCoin is a blockchain-powered microloan platform for Uganda. We provide collateral-free loans to help individuals grow their businesses, with transparent terms and a credit scoring system that rewards good repayment behavior.</div></div></div>
+<div class='accordion-item'>
+<h2 class='accordion-header'><button class='accordion-button collapsed' type='button' data-bs-toggle='collapse' data-bs-target='#faq2'>How do I apply for a loan?</button></h2>
+<div id='faq2' class='accordion-collapse collapse' data-bs-parent='#faqAccordion'>
+<div class='accordion-body'>1. Register an account with your National ID. 2. Complete KYC verification by uploading required documents. 3. Once verified, go to the Loans page and fill out the application form. 4. Wait for admin approval (typically within 24 hours).</div></div></div>
+<div class='accordion-item'>
+<h2 class='accordion-header'><button class='accordion-button collapsed' type='button' data-bs-toggle='collapse' data-bs-target='#faq3'>What are the loan limits and interest rates?</button></h2>
+<div id='faq3' class='accordion-collapse collapse' data-bs-parent='#faqAccordion'>
+<div class='accordion-body'>Loan amounts range from 50,000 to 1,000,000 UGX. Interest rates depend on your credit score: Excellent (750+): 3%, Good (700-749): 3.5%, Fair (650-699): 5%, Poor (600-649): 7.5%, Very Poor (<600): 10%.</div></div></div>
+<div class='accordion-item'>
+<h2 class='accordion-header'><button class='accordion-button collapsed' type='button' data-bs-toggle='collapse' data-bs-target='#faq4'>How is my credit score calculated?</button></h2>
+<div id='faq4' class='accordion-collapse collapse' data-bs-parent='#faqAccordion'>
+<div class='accordion-body'>Your credit score (300-850) is based on: Payment History (35%), Credit Utilization (30%), Length of Credit History (15%), Loan Diversity (10%), and Recent Applications (10%). Timely repayments increase your score, while defaults decrease it.</div></div></div>
+<div class='accordion-item'>
+<h2 class='accordion-header'><button class='accordion-button collapsed' type='button' data-bs-toggle='collapse' data-bs-target='#faq5'>What happens if I miss a payment?</button></h2>
+<div id='faq5' class='accordion-collapse collapse' data-bs-parent='#faqAccordion'>
+<div class='accordion-body'>You have a 7-day grace period after the due date. If payment is not made within this period, your loan will be marked as defaulted, late fees may apply, and your credit score will be negatively impacted.</div></div></div>
+<div class='accordion-item'>
+<h2 class='accordion-header'><button class='accordion-button collapsed' type='button' data-bs-toggle='collapse' data-bs-target='#faq6'>How does the referral program work?</button></h2>
+<div id='faq6' class='accordion-collapse collapse' data-bs-parent='#faqAccordion'>
+<div class='accordion-body'>Share your unique referral code with friends. When they register using your code and complete their first loan, you receive a reward of 5,000 UGX in your account. There is no limit to how many people you can refer.</div></div></div>
+<div class='accordion-item'>
+<h2 class='accordion-header'><button class='accordion-button collapsed' type='button' data-bs-toggle='collapse' data-bs-target='#faq7'>How do I verify my email?</button></h2>
+<div id='faq7' class='accordion-collapse collapse' data-bs-parent='#faqAccordion'>
+<div class='accordion-body'>After registration, check your email for a verification link. Click the link to verify your account. If you didn't receive it, go to your dashboard and click "Resend verification" or contact support.</div></div></div>
+<div class='accordion-item'>
+<h2 class='accordion-header'><button class='accordion-button collapsed' type='button' data-bs-toggle='collapse' data-bs-target='#faq8'>Can I delete my account?</button></h2>
+<div id='faq8' class='accordion-collapse collapse' data-bs-parent='#faqAccordion'>
+<div class='accordion-body'>Yes. Go to your profile settings and select "Delete Account". You will need to confirm by typing your email. Note: this action is permanent and will remove all your data from the platform.</div></div></div>
+</div>
+<div class='text-center mt-4'>
+<p class='text-muted'>Still need help?</p>
+<a href='{{ url_for("support") }}' class='btn btn-p'>Contact Support</a>
+</div>
+</div></div></div>
+{% endblock %}

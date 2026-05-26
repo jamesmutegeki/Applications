@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Users - YoCoin{% endblock %}
+
+{% block styles %}
+<style>
+main.container { max-width: 100% !important; padding-left: 24px; padding-right: 24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class='row'>
+<div class='col-12'>
+<div class='card p-4 mt-4'>
+<div class='d-flex justify-content-between align-items-center mb-3'>
+<h3 class='fw-bold mb-0'><i class='bi bi-people me-2' style='color:var(--p)'></i>User Management</h3>
+<a href='{{ url_for("admin_dashboard") }}' class='btn btn-outline-secondary btn-sm'>Back</a>
+</div>
+
+<div class='row g-2 mb-3'>
+<div class='col-md-4'>
+<div class='input-group'>
+<span class='input-group-text'><i class='bi bi-search'></i></span>
+<input type='text' class='form-control' id='userSearch' placeholder='Search name, email, phone...'>
+</div>
+</div>
+<div class='col-md-3'>
+<select class='form-select' id='kycFilter'>
+<option value=''>All KYC Status</option>
+<option value='verified'>Verified</option>
+<option value='in_progress'>In Progress</option>
+<option value='pending_review'>Pending Review</option>
+<option value='not_started'>Not Started</option>
+<option value='rejected'>Rejected</option>
+</select>
+</div>
+<div class='col-md-3'>
+<select class='form-select' id='scoreFilter'>
+<option value=''>All Credit Scores</option>
+<option value='excellent'>Excellent (750+)</option>
+<option value='good'>Good (700-749)</option>
+<option value='fair'>Fair (650-699)</option>
+<option value='poor'>Poor (600-649)</option>
+<option value='very_poor'>Very Poor (<600)</option>
+</select>
+</div>
+<div class='col-md-2'>
+<small class='text-muted' id='userCount'>{{ users|length }} users</small>
+</div>
+</div>
+
+{% if users %}
+<div class='table-responsive'>
+<table class='table align-middle' id='userTable'>
+<thead>
+<tr>
+<th>User ID</th>
+<th>Name</th>
+<th>Email</th>
+<th>Phone</th>
+<th>Region</th>
+<th>Credit Score</th>
+<th>KYC Status</th>
+<th>Registered</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody>
+{% for u in users %}
+<tr class='user-row'
+    data-name='{{ u.name }} {{ u.email }} {{ u.phone }}'
+    data-kyc='{{ u.kyc_status }}'
+    data-score='{{ u.credit_score or 500 }}'>
+<td class='text-break'>{{ u.user_id[:12] }}...</td>
+<td>
+<div class='d-flex align-items-center gap-2'>
+{% if u.image_file %}
+<img src="{{ url_for('static', filename='profile_pics/' + u.image_file) }}" class='rounded-circle' style='width:32px;height:32px;object-fit:cover' alt=''>
+{% endif %}
+<strong>{{ u.name }}</strong>
+</div>
+</td>
+<td>{{ u.email }}</td>
+<td>{{ u.phone }}</td>
+<td>{{ u.region }}</td>
+<td>
+<span class='badge bg-{{ "success" if u.credit_score > 700 else "warning" if u.credit_score > 600 else "danger" }}'>{{ u.credit_score }}</span>
+</td>
+<td>
+<span class='badge bg-{{ "success" if u.kyc_status == "verified" else "warning" if u.kyc_status == "in_progress" else "secondary" }}'>{{ u.kyc_status.replace('_', ' ').title() }}</span>
+</td>
+<td><small>{{ u.registration_date.strftime('%Y-%m-%d') if u.registration_date else 'N/A' }}</small></td>
+<td><a href='{{ url_for("admin_user_detail", user_id=u.user_id) }}' class='btn btn-sm btn-outline-primary'>View</a></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+{% if total_pages > 1 %}
+<nav class='mt-3'>
+<ul class='pagination justify-content-center'>
+{% for p in range(1, total_pages + 1) %}
+<li class='page-item {{ "active" if p == page }}'><a class='page-link' href='{{ url_for("admin_users", page=p) }}'>{{ p }}</a></li>
+{% endfor %}
+</ul>
+</nav>
+{% endif %}
+{% else %}
+<div class='alert alert-info'>No users found.</div>
+{% endif %}
+
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterUsers() {
+    var query = document.getElementById('userSearch').value.toLowerCase();
+    var kyc = document.getElementById('kycFilter').value;
+    var score = document.getElementById('scoreFilter').value;
+    var count = 0;
+    document.querySelectorAll('.user-row').forEach(function(row) {
+        var name = row.dataset.name.toLowerCase();
+        var rowKyc = row.dataset.kyc;
+        var rowScore = parseInt(row.dataset.score);
+        var matchSearch = !query || name.includes(query);
+        var matchKyc = !kyc || rowKyc === kyc;
+        var matchScore = true;
+        if (score === 'excellent') matchScore = rowScore >= 750;
+        else if (score === 'good') matchScore = rowScore >= 700 && rowScore < 750;
+        else if (score === 'fair') matchScore = rowScore >= 650 && rowScore < 700;
+        else if (score === 'poor') matchScore = rowScore >= 600 && rowScore < 650;
+        else if (score === 'very_poor') matchScore = rowScore < 600;
+        var show = matchSearch && matchKyc && matchScore;
+        row.style.display = show ? '' : 'none';
+        if (show) count++;
+    });
+    document.getElementById('userCount').textContent = count + ' users';
+}
+document.getElementById('userSearch').addEventListener('input', filterUsers);
+document.getElementById('kycFilter').addEventListener('change', filterUsers);
+document.getElementById('scoreFilter').addEventListener('change', filterUsers);
+</script>
+{% endblock %}

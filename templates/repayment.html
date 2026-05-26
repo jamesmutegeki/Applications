@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Loan Repayment - YoCoin{% endblock %}
+
+{% block content %}
+<div class='row justify-content-center'>
+<div class='col-lg-7'>
+<div class='card p-4 mt-4'>
+<div class='text-center mb-4'>
+<i class='bi bi-credit-card fs-1 mb-3' style='color:var(--p)'></i>
+<h2 class='fw-bold mb-1'>Make a Payment</h2>
+<p class='text-muted mb-0'>Repay your loan installments</p>
+</div>
+
+<form method='POST' action="{{ url_for('repayment') }}">{{ form.hidden_tag() }}
+
+<div class='mb-4'>
+<label class='form-label'>Select Loan to Repay</label>
+{{ form.loan_id(class='form-select fc') }}
+</div>
+
+<div class='mb-4'>
+<label class='form-label'>Payment Amount (UGX)</label>
+{{ form.amount(class='form-control fc', placeholder='Enter amount') }}
+<div class='form-text'>Enter the amount you want to pay</div>
+</div>
+
+<div class='mb-4'>
+<label class='form-label'>Payment Method</label>
+{{ form.payment_method(class='form-select fc') }}
+</div>
+
+<div class='card p-3 mb-4' style='background:var(--g1);border:none;'>
+<h6 class='fw-bold mb-2'><i class='bi bi-phone me-1'></i>Payment Instructions</h6>
+<p class='small text-muted mb-2'>Send your payment via Mobile Money to <strong>+256 700 000 000</strong> (YoCoin Official Account) with your Loan ID as reference.</p>
+<p class='small text-muted mb-0'>After sending, enter the amount and transaction reference below. Payments are verified within 1-2 hours.</p>
+</div>
+
+
+
+<div class='card p-3 mb-4' style='background:var(--g1);border:none;'>
+<div class='d-flex justify-content-between align-items-center'>
+<span>Payment via:</span>
+<strong style='color:var(--p)'>Mobile Money / Bank / Cash</strong>
+</div>
+</div>
+
+<div class='d-grid'><button type='submit' class='btn btn-p btn-lg'><i class='bi bi-check-circle me-2'></i>Make Payment</button></div>
+</form>
+
+<div class='text-center mt-3'>
+<a href="{{ url_for('dashboard') }}" class='text-muted'>Back to Dashboard</a>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}

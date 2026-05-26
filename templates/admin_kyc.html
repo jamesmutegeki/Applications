@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin KYC - YoCoin{% endblock %}
+
+{% block styles %}
+<style>
+main.container { max-width: 100% !important; padding-left: 24px; padding-right: 24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class='row'>
+<div class='col-12'>
+<div class='card p-4 mt-4'>
+<div class='d-flex justify-content-between align-items-center mb-3'>
+<h3 class='fw-bold mb-0'><i class='bi bi-shield-check me-2' style='color:var(--p)'></i>KYC Verification Queue</h3>
+<a href='{{ url_for("admin_dashboard") }}' class='btn btn-outline-secondary btn-sm'>Back to Admin</a>
+</div>
+
+<div class='row g-2 mb-3'>
+<div class='col-md-4'>
+<div class='input-group'>
+<span class='input-group-text'><i class='bi bi-search'></i></span>
+<input type='text' class='form-control form-control-sm' id='kycSearch' placeholder='Search user...'>
+</div>
+</div>
+<div class='col-md-3'>
+<select class='form-select form-select-sm' id='docTypeFilter'>
+<option value=''>All Document Types</option>
+<option value='national_id_front'>National ID (Front)</option>
+<option value='national_id_back'>National ID (Back)</option>
+<option value='selfie'>Selfie with ID</option>
+<option value='utility_bill'>Proof of Address</option>
+</select>
+</div>
+</div>
+
+{% if pending_docs %}
+<div class='table-responsive'>
+<table class='table align-middle' id='kycTable'>
+<thead>
+<tr>
+<th><input type='checkbox' id='selectAllKyc'></th>
+<th>Document ID</th>
+<th>User</th>
+<th>Document Type</th>
+<th>File Path</th>
+<th>Uploaded</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+{% for doc in pending_docs %}
+<tr class='kyc-row' data-name='{{ doc.name }} {{ doc.email }}' data-type='{{ doc.document_type }}'>
+<td><input type='checkbox' name='ids' value='{{ doc.id }}' class='kyc-check'></td>
+<td class='text-break'>{{ doc.id }}</td>
+<td>
+<div class='fw-bold'>{{ doc.name }}</div>
+<div class='text-muted small'>{{ doc.email }}</div>
+</td>
+<td>{{ doc.document_type.replace('_', ' ').title() }}</td>
+<td><code class='small'>{{ doc.file_path }}</code></td>
+<td>{{ doc.uploaded_at.strftime('%Y-%m-%d %H:%M') if doc.uploaded_at else 'N/A' }}</td>
+<td>
+<div class='d-flex gap-2 flex-wrap'>
+<button type='button' class='btn btn-success btn-sm' data-bs-toggle='modal' data-bs-target='#kycApproveModal' data-doc-id='{{ doc.id }}' data-doc-name='{{ doc.name }}' data-doc-type='{{ doc.document_type }}'>Approve</button>
+<button type='button' class='btn btn-outline-danger btn-sm' data-bs-toggle='modal' data-bs-target='#kycRejectModal' data-doc-id='{{ doc.id }}' data-doc-name='{{ doc.name }}'>Reject</button>
+</div>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<form method='POST' action='{{ url_for("admin_bulk_action") }}' class='d-flex gap-2 mb-3 align-items-center' id='bulkKycForm'>
+<select name='action' class='form-select form-select-sm' style='max-width:180px'>
+<option value='approve_kyc'>Approve Selected</option>
+<option value='reject_kyc'>Reject Selected</option>
+</select>
+<input type='text' name='reason' class='form-control form-control-sm' placeholder='Rejection reason (if rejecting)' style='max-width:250px'>
+<button type='submit' class='btn btn-primary btn-sm'>Apply</button>
+</form>
+
+{% if total_pages > 1 %}
+<nav class='mt-3'>
+<ul class='pagination justify-content-center'>
+{% for p in range(1, total_pages + 1) %}
+<li class='page-item {{ "active" if p == page }}'><a class='page-link' href='{{ url_for("admin_kyc", page=p) }}'>{{ p }}</a></li>
+{% endfor %}
+</ul>
+</nav>
+{% endif %}
+{% else %}
+<div class='alert alert-info'>No pending KYC documents.</div>
+{% endif %}
+</div>
+</div>
+</div>
+
+<div class='modal fade' id='kycApproveModal' tabindex='-1'>
+<div class='modal-dialog modal-sm'>
+<div class='modal-content'>
+<div class='modal-header'>
+<h5 class='modal-title'>Approve KYC Document</h5>
+<button type='button' class='btn-close' data-bs-dismiss='modal'></button>
+</div>
+<div class='modal-body'>
+<p>Approve document for <strong id='kycApproveName'></strong>?</p>
+<small class='text-muted' id='kycApproveType'></small>
+</div>
+<div class='modal-footer'>
+<button type='button' class='btn btn-secondary btn-sm' data-bs-dismiss='modal'>Cancel</button>
+<form method='POST' id='kycApproveForm'>
+<button type='submit' class='btn btn-success btn-sm'>Confirm</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+
+<div class='modal fade' id='kycRejectModal' tabindex='-1'>
+<div class='modal-dialog'>
+<div class='modal-content'>
+<div class='modal-header'>
+<h5 class='modal-title'>Reject KYC Document</h5>
+<button type='button' class='btn-close' data-bs-dismiss='modal'></button>
+</div>
+<div class='modal-body'>
+<p>Reject document for <strong id='kycRejectName'></strong>?</p>
+<div class='mt-2'>
+<label class='form-label'>Reason</label>
+<textarea class='form-control' id='kycRejectReason' rows='2' placeholder='Document unclear, expired, etc.' required></textarea>
+</div>
+</div>
+<div class='modal-footer'>
+<button type='button' class='btn btn-secondary btn-sm' data-bs-dismiss='modal'>Cancel</button>
+<form method='POST' id='kycRejectForm'>
+<button type='submit' class='btn btn-danger btn-sm'>Confirm Rejection</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('kycApproveModal').addEventListener('show.bs.modal', function(e) {
+    var btn = e.relatedTarget;
+    document.getElementById('kycApproveName').textContent = btn.dataset.docName;
+    document.getElementById('kycApproveType').textContent = btn.dataset.docType.replace('_', ' ').toUpperCase();
+    document.getElementById('kycApproveForm').action = '/admin/kyc/' + btn.dataset.docId + '/approve';
+});
+document.getElementById('kycRejectModal').addEventListener('show.bs.modal', function(e) {
+    var btn = e.relatedTarget;
+    document.getElementById('kycRejectName').textContent = btn.dataset.docName;
+    document.getElementById('kycRejectForm').action = '/admin/kyc/' + btn.dataset.docId + '/reject';
+});
+document.getElementById('kycRejectForm').addEventListener('submit', function(e) {
+    var reason = document.getElementById('kycRejectReason').value.trim();
+    if (!reason) { e.preventDefault(); alert('Please enter a reason.'); return; }
+    var input = document.createElement('input');
+    input.type = 'hidden'; input.name = 'reason'; input.value = reason;
+    this.appendChild(input);
+});
+document.getElementById('kycSearch').addEventListener('input', function() {
+    var q = this.value.toLowerCase();
+    document.querySelectorAll('.kyc-row').forEach(function(r) {
+        r.style.display = r.dataset.name.toLowerCase().includes(q) ? '' : 'none';
+    });
+});
+document.getElementById('docTypeFilter').addEventListener('change', function() {
+    var t = this.value;
+    document.querySelectorAll('.kyc-row').forEach(function(r) {
+        r.style.display = (!t || r.dataset.type === t) ? '' : 'none';
+    });
+});
+var selectAllKyc = document.getElementById('selectAllKyc');
+if (selectAllKyc) {
+    selectAllKyc.addEventListener('change', function() {
+        document.querySelectorAll('.kyc-check').forEach(function(c) { c.checked = selectAllKyc.checked; });
+    });
+}
+document.getElementById('bulkKycForm').addEventListener('submit', function(e) {
+    var checked = document.querySelectorAll('.kyc-check:checked');
+    if (!checked.length) { e.preventDefault(); alert('Select at least one document.'); }
+});
+</script>
+{% endblock %}

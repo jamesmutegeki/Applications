@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - YoCoin{% endblock %}
+
+{% block styles %}
+<style>
+main.container { max-width: 100% !important; padding-left: 24px; padding-right: 24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class='row'>
+<div class='col-12 px-0'>
+<div class='card p-4 mt-4'>
+<div class='d-flex justify-content-between align-items-center mb-3'>
+<h3 class='fw-bold mb-0'><i class='bi bi-shield-check me-2' style='color:var(--p)'></i>Admin Dashboard</h3>
+<div class='d-flex gap-2 flex-wrap'>
+<a href='{{ url_for("admin_system") }}' class='btn btn-outline-success btn-sm'>System Health</a>
+<a href='{{ url_for("admin_reports") }}' class='btn btn-outline-success btn-sm'>Reports</a>
+<a href='{{ url_for("admin_kyc") }}' class='btn btn-outline-success btn-sm'>KYC Queue</a>
+<a href='{{ url_for("admin_users") }}' class='btn btn-outline-success btn-sm'>Users</a>
+<a href='{{ url_for("admin_mobile_money") }}' class='btn btn-outline-success btn-sm'>Mobile Money</a>
+<a href='{{ url_for("admin_audit") }}' class='btn btn-outline-success btn-sm'>Audit Log</a>
+<a href='{{ url_for("admin_monitoring") }}' class='btn btn-outline-success btn-sm'>Monitoring</a>
+</div>
+</div>
+
+<div class='row g-3 mb-4'>
+<div class='col-md-3'>
+<div class='card p-3 text-center border-start border-success border-4'>
+<div class='text-muted small'>Registered Users</div>
+<div class='fw-bold' style='color:var(--p); font-size:1.6rem;'>{{ system_users }}</div>
+</div>
+</div>
+<div class='col-md-3'>
+<div class='card p-3 text-center border-start border-success border-4'>
+<div class='text-muted small'>Total Loans</div>
+<div class='fw-bold' style='color:var(--p); font-size:1.6rem;'>{{ stats.total }}</div>
+</div>
+</div>
+<div class='col-md-3'>
+<div class='card p-3 text-center border-start border-success border-4'>
+<div class='text-muted small'>Blockchain Blocks</div>
+<div class='fw-bold' style='color:var(--p); font-size:1.6rem;'>{{ system_blocks }}</div>
+</div>
+</div>
+<div class='col-md-3'>
+<div class='card p-3 text-center border-start border-success border-4'>
+<div class='text-muted small'>Chain Status</div>
+<div class='fw-bold' style='color:var(--p); font-size:1.6rem;'>{% if chain_valid %}<span class='text-success'>Valid</span>{% else %}<span class='text-danger'>Invalid</span>{% endif %}</div>
+</div>
+</div>
+</div>
+
+<div class='row g-3 mb-4'>
+<div class='col-md-3'>
+<div class='card p-3 text-center'>
+<div class='text-muted small'>Approved Loans</div>
+<div class='fw-bold text-success' style='font-size:1.3rem;'>{{ stats.approved }}</div>
+</div>
+</div>
+<div class='col-md-3'>
+<div class='card p-3 text-center'>
+<div class='text-muted small'>Pending</div>
+<div class='fw-bold text-warning' style='font-size:1.3rem;'>{{ stats.pending }}</div>
+</div>
+</div>
+<div class='col-md-3'>
+<div class='card p-3 text-center'>
+<div class='text-muted small'>Rejected</div>
+<div class='fw-bold text-danger' style='font-size:1.3rem;'>{{ stats.rejected }}</div>
+</div>
+</div>
+<div class='col-md-3'>
+<div class='card p-3 text-center'>
+<div class='text-muted small'>Overdue / Defaulted</div>
+<div class='fw-bold text-danger' style='font-size:1.3rem;'>{{ overdue_loans }} / {{ defaulted_loans }}</div>
+</div>
+</div>
+</div>
+
+<div class='d-flex justify-content-between align-items-center mb-3'>
+<h5 class='fw-bold mb-0'>Pending Loan Applications</h5>
+<div class='input-group' style='max-width:300px'>
+<input type='text' class='form-control form-control-sm' id='loanSearch' placeholder='Search borrower...'>
+<button class='btn btn-outline-secondary btn-sm' type='button'><i class='bi bi-search'></i></button>
+</div>
+</div>
+
+{% if pending_loans %}
+<div class='table-responsive'>
+<table class='table align-middle' id='loanTable'>
+<thead>
+<tr>
+<th><input type='checkbox' id='selectAllLoans'></th>
+<th>Loan ID</th>
+<th>Borrower</th>
+<th>Amount</th>
+<th>Purpose</th>
+<th>Term</th>
+<th>Credit Score</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+{% for loan in pending_loans %}
+<tr class='loan-row' data-name='{{ loan.name }} {{ loan.email }}'>
+<td><input type='checkbox' name='ids' value='{{ loan.loan_id }}' class='loan-check'></td>
+<td class='text-break'>{{ loan.loan_id[:12] }}...</td>
+<td>
+<div class='fw-bold'>{{ loan.name }}</div>
+<div class='text-muted small'>{{ loan.email }}</div>
+</td>
+<td class='fw-bold'>{{ '{:,}'.format(loan.amount|int) }} UGX</td>
+<td>{{ loan.purpose }}</td>
+<td>{{ loan.term_months }} months</td>
+<td>
+<span class='badge bg-{{ "success" if loan.credit_score > 700 else "warning" if loan.credit_score > 600 else "danger" }}'>{{ loan.credit_score }}</span>
+</td>
+<td>
+<div class='d-flex gap-2 flex-wrap'>
+<button type='button' class='btn btn-success btn-sm' data-bs-toggle='modal' data-bs-target='#approveModal' data-loan-id='{{ loan.loan_id }}' data-loan-amount='{{ loan.amount }}' data-loan-name='{{ loan.name }}'>Approve</button>
+<button type='button' class='btn btn-outline-danger btn-sm' data-bs-toggle='modal' data-bs-target='#rejectModal' data-loan-id='{{ loan.loan_id }}' data-loan-name='{{ loan.name }}'>Reject</button>
+</div>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<form method='POST' action='{{ url_for("admin_bulk_action") }}' class='d-flex gap-2 mb-3 align-items-center' id='bulkLoanForm'>
+<select name='action' class='form-select form-select-sm' style='max-width:180px'>
+<option value='approve_loans'>Approve Selected</option>
+<option value='reject_loans'>Reject Selected</option>
+</select>
+<input type='text' name='reason' class='form-control form-control-sm' placeholder='Rejection reason (if rejecting)' style='max-width:250px'>
+<button type='submit' class='btn btn-primary btn-sm' id='bulkActionBtn'>Apply</button>
+</form>
+
+{% if total_pages > 1 %}
+<nav class='mt-3'>
+<ul class='pagination justify-content-center'>
+{% for p in range(1, total_pages + 1) %}
+<li class='page-item {{ "active" if p == page }}'><a class='page-link' href='{{ url_for("admin_dashboard", page=p) }}'>{{ p }}</a></li>
+{% endfor %}
+</ul>
+</nav>
+{% endif %}
+{% else %}
+<div class='alert alert-info'>No pending loans.</div>
+{% endif %}
+
+<hr class='my-4'>
+<h5 class='fw-bold mb-3'>Recent Approved Loans</h5>
+{% if recent_approved %}
+<div class='table-responsive'>
+<table class='table align-middle'>
+<thead>
+<tr>
+<th>Loan ID</th>
+<th>Borrower</th>
+<th>Amount</th>
+<th>Purpose</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody>
+{% for loan in recent_approved %}
+<tr>
+<td class='text-break'>{{ loan.loan_id[:12] }}...</td>
+<td>{{ loan.name }}</td>
+<td class='fw-bold'>{{ '{:,}'.format(loan.amount|int) }} UGX</td>
+<td>{{ loan.purpose }}</td>
+<td><span class='badge bg-success'>{{ loan.status }}</span></td>
+<td>
+{% if loan.status == 'approved' %}
+<form method='POST' action='{{ url_for("disburse_loan", loan_id=loan.loan_id) }}' class='d-inline'>
+<select name='method' class='form-select form-select-sm d-inline-block' style='width:auto'><option value='mobile_money'>Mobile Money</option><option value='bank'>Bank</option></select>
+<label class='small'><input type='checkbox' name='use_api' value='true' checked> API</label>
+<button type='submit' class='btn btn-sm btn-success'>Disburse</button>
+</form>
+{% else %}
+<a href='{{ url_for("loan_details", loan_id=loan.loan_id) }}' class='btn btn-sm btn-outline-primary'>View</a>
+{% endif %}
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<div class='alert alert-secondary'>No approved loans found.</div>
+{% endif %}
+
+</div>
+</div>
+</div>
+
+<div class='modal fade' id='approveModal' tabindex='-1'>
+<div class='modal-dialog'>
+<div class='modal-content'>
+<div class='modal-header'>
+<h5 class='modal-title'>Confirm Loan Approval</h5>
+<button type='button' class='btn-close' data-bs-dismiss='modal'></button>
+</div>
+<div class='modal-body'>
+<p>Are you sure you want to approve this loan?</p>
+<div class='card p-3 bg-light'>
+<p class='mb-1'><strong>Borrower:</strong> <span id='approveName'></span></p>
+<p class='mb-0'><strong>Amount:</strong> UGX <span id='approveAmount'></span></p>
+</div>
+</div>
+<div class='modal-footer'>
+<button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+<form method='POST' id='approveForm'>
+<button type='submit' class='btn btn-success'>Confirm Approval</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+
+<div class='modal fade' id='rejectModal' tabindex='-1'>
+<div class='modal-dialog'>
+<div class='modal-content'>
+<div class='modal-header'>
+<h5 class='modal-title'>Confirm Loan Rejection</h5>
+<button type='button' class='btn-close' data-bs-dismiss='modal'></button>
+</div>
+<div class='modal-body'>
+<p>Are you sure you want to reject this loan?</p>
+<div class='card p-3 bg-light'>
+<p class='mb-1'><strong>Borrower:</strong> <span id='rejectName'></span></p>
+</div>
+<div class='mt-3'>
+<label class='form-label'>Rejection Reason</label>
+<textarea class='form-control' id='rejectReason' rows='3' placeholder='Enter reason for rejection...' required></textarea>
+</div>
+</div>
+<div class='modal-footer'>
+<button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancel</button>
+<form method='POST' id='rejectForm'>
+<button type='submit' class='btn btn-danger'>Confirm Rejection</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('approveModal').addEventListener('show.bs.modal', function(e) {
+    var btn = e.relatedTarget;
+    document.getElementById('approveName').textContent = btn.dataset.loanName;
+    document.getElementById('approveAmount').textContent = parseInt(btn.dataset.loanAmount).toLocaleString();
+    document.getElementById('approveForm').action = '/admin/loan/' + btn.dataset.loanId + '/approve';
+});
+document.getElementById('rejectModal').addEventListener('show.bs.modal', function(e) {
+    var btn = e.relatedTarget;
+    document.getElementById('rejectName').textContent = btn.dataset.loanName;
+    document.getElementById('rejectForm').action = '/admin/loan/' + btn.dataset.loanId + '/reject';
+});
+document.getElementById('rejectForm').addEventListener('submit', function(e) {
+    var reason = document.getElementById('rejectReason').value.trim();
+    if (!reason) {
+        e.preventDefault();
+        alert('Please enter a rejection reason.');
+    }
+    var input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'reason';
+    input.value = reason;
+    this.appendChild(input);
+});
+var loanSearch = document.getElementById('loanSearch');
+if (loanSearch) {
+    loanSearch.addEventListener('input', function() {
+        var query = this.value.toLowerCase();
+        document.querySelectorAll('.loan-row').forEach(function(row) {
+            var name = row.dataset.name.toLowerCase();
+            row.style.display = name.includes(query) ? '' : 'none';
+        });
+    });
+}
+var selectAll = document.getElementById('selectAllLoans');
+if (selectAll) {
+    selectAll.addEventListener('change', function() {
+        document.querySelectorAll('.loan-check').forEach(function(c) { c.checked = selectAll.checked; });
+    });
+}
+var bulkForm = document.getElementById('bulkLoanForm');
+if (bulkForm) {
+    bulkForm.addEventListener('submit', function(e) {
+        var checked = document.querySelectorAll('.loan-check:checked');
+        if (!checked.length) { e.preventDefault(); alert('Select at least one loan.'); }
+    });
+}
+</script>
+{% endblock %}

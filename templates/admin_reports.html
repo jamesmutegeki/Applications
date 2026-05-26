@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Reports & Analytics - YoCoin{% endblock %}
+{% block styles %}
+<style>
+main.container { max-width: 100% !important; padding-left: 24px; padding-right: 24px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class='row'>
+<div class='col-12'>
+<div class='card p-4 mt-4'>
+<div class='d-flex justify-content-between align-items-center mb-3'>
+<h3 class='fw-bold mb-0'><i class='bi bi-bar-chart me-2' style='color:var(--p)'></i>Reports & Analytics</h3>
+<a href='{{ url_for("admin_dashboard") }}' class='btn btn-outline-secondary btn-sm'>Back</a>
+</div>
+<div class='row g-3 mb-4'>
+<div class='col-md-4'><div class='card p-3 text-center'><div class='text-muted small'>Total Loans</div><div class='fw-bold fs-3' style='color:var(--p)'>{{ loan_stats.total or 0 }}</div></div></div>
+<div class='col-md-4'><div class='card p-3 text-center'><div class='text-muted small'>Total Loan Value</div><div class='fw-bold fs-5'>{{ '{:,.0f}'.format(loan_stats.total_amount or 0) }} UGX</div></div></div>
+<div class='col-md-4'><div class='card p-3 text-center'><div class='text-muted small'>Notifications</div><div class='fw-bold fs-5'>{{ notif_stats.unread or 0 }} unread / {{ notif_stats.total or 0 }} total</div></div></div>
+</div>
+<h5 class='fw-bold mb-3'>Loans by Status</h5>
+<div class='table-responsive mb-4'><table class='table table-sm'>
+<thead><tr><th>Status</th><th>Count</th><th>Total Amount</th><th>% of Total</th></tr></thead>
+<tbody>{% for s in loan_by_status %}
+<tr><td><span class='badge bg-{{ "success" if s.status in ["approved","disbursed","repaid"] else "warning" if s.status == "pending" else "danger" }}'>{{ s.status }}</span></td>
+<td>{{ s.cnt }}</td><td>{{ '{:,.0f}'.format(s.total or 0) }} UGX</td>
+<td>{{ (s.cnt / loan_stats.total * 100)|round(1) if loan_stats.total else 0 }}%</td></tr>{% endfor %}
+</tbody></table></div>
+<h5 class='fw-bold mb-3'>KYC Distribution</h5>
+<div class='row g-3 mb-4'>{% for k in kyc_stats %}
+<div class='col-md-3'><div class='card p-3 text-center'><div class='text-muted small'>{{ k.kyc_status.replace('_',' ').title() }}</div><div class='fw-bold fs-4'>{{ k.cnt }}</div></div></div>{% endfor %}
+</div>
+<h5 class='fw-bold mb-3'>Users by Region</h5>
+<div class='table-responsive mb-4'><table class='table table-sm'>
+<thead><tr><th>Region</th><th>Users</th><th>Avg Credit Score</th></tr></thead>
+<tbody>{% for r in region_stats %}
+<tr><td>{{ r.region }}</td><td>{{ r.users }}</td><td>{{ (r.avg_score or 0)|round(0)|int }}</td></tr>{% endfor %}
+</tbody></table></div>
+<h5 class='fw-bold mb-3'>Recent Loan Activity (30 days)</h5>
+{% if loan_trend %}
+<div class='table-responsive'><table class='table table-sm'>
+<thead><tr><th>Date</th><th>Applications</th><th>Total Amount</th></tr></thead>
+<tbody>{% for t in loan_trend %}
+<tr><td>{{ t.date.strftime('%Y-%m-%d') if t.date else '-' }}</td><td>{{ t.cnt }}</td><td>{{ '{:,.0f}'.format(t.total or 0) }} UGX</td></tr>{% endfor %}
+</tbody></table></div>{% else %}<div class='alert alert-info'>No recent activity.</div>{% endif %}
+</div></div></div>
+{% endblock %}

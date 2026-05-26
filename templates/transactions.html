@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Transaction History - YoCoin{% endblock %}
+{% block content %}
+<div class='row justify-content-center'>
+<div class='col-lg-10'>
+<div class='card p-4 mt-4'>
+<div class='d-flex justify-content-between align-items-center mb-3'>
+<h3 class='fw-bold mb-0'><i class='bi bi-receipt me-2' style='color:var(--p)'></i>Transaction History</h3>
+<div class='d-flex gap-2'>
+<a href='{{ url_for("export_statement") }}' class='btn btn-outline-primary btn-sm'><i class='bi bi-download me-1'></i>Export CSV</a>
+<a href='{{ url_for("dashboard") }}' class='btn btn-outline-secondary btn-sm'>Back</a>
+</div></div>
+<h5 class='fw-bold mb-3'>Repayments</h5>
+{% if repayments %}
+<div class='table-responsive'><table class='table align-middle'>
+<thead><tr><th>Loan</th><th>Purpose</th><th>Amount</th><th>Due Date</th><th>Paid</th><th>Status</th></tr></thead>
+<tbody>{% for r in repayments %}
+<tr><td class='small text-break'>{{ r.loan_id[:12] }}...</td><td>{{ r.purpose.replace('_',' ').title() }}</td>
+<td class='fw-bold'>{{ '{:,.0f}'.format(r.amount) }} UGX</td><td>{{ r.due_date.strftime('%Y-%m-%d') if r.due_date else '-' }}</td>
+<td>{{ r.payment_date.strftime('%Y-%m-%d') if r.payment_date else '-' }}</td>
+<td><span class='badge bg-{{ "success" if r.status == "paid" else "warning" if r.status == "pending" else "danger" }}'>{{ r.status }}</span></td></tr>{% endfor %}
+</tbody></table></div>
+{% if total_pages > 1 %}
+<nav class='mt-3'><ul class='pagination justify-content-center'>
+{% for p in range(1, total_pages + 1) %}
+<li class='page-item {{ "active" if p == page }}'><a class='page-link' href='{{ url_for("transactions_page", page=p) }}'>{{ p }}</a></li>{% endfor %}
+</ul></nav>{% endif %}
+{% else %}<div class='alert alert-info'>No transactions yet.</div>{% endif %}
+{% if fees %}
+<h5 class='fw-bold mb-3 mt-4'>Late Fees</h5>
+<div class='table-responsive'><table class='table table-sm'>
+<thead><tr><th>Loan</th><th>Amount</th><th>Reason</th><th>Applied</th><th>Status</th></tr></thead>
+<tbody>{% for f in fees %}
+<tr><td class='small text-break'>{{ f.loan_id[:12] }}...</td><td>{{ '{:,.0f}'.format(f.amount) }} UGX</td><td>{{ f.reason or '-' }}</td>
+<td>{{ f.applied_at.strftime('%Y-%m-%d') if f.applied_at else '-' }}</td>
+<td><span class='badge bg-{{ "success" if f.is_paid else "warning" }}'>{{ "Paid" if f.is_paid else "Unpaid" }}</span></td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+</div></div></div>
+{% endblock %}

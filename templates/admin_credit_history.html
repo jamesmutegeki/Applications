@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Credit Score History - YoCoin{% endblock %}
+{% block styles %}
+<style>
+main.container { max-width: 100% !important; padding-left: 24px; padding-right: 24px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class='row'>
+<div class='col-12'>
+<div class='card p-4 mt-4'>
+<div class='d-flex justify-content-between align-items-center mb-3'>
+<h3 class='fw-bold mb-0'><i class='bi bi-graph-up me-2' style='color:var(--p)'></i>Credit Score History</h3>
+<a href='{{ url_for("admin_user_detail", user_id=user.user_id) }}' class='btn btn-outline-secondary btn-sm'>Back</a>
+</div>
+<div class='card p-3 bg-light mb-4'>
+<div class='row g-3'>
+<div class='col-md-4'>
+<strong>User:</strong> {{ user.name }}
+</div>
+<div class='col-md-4'>
+<strong>Current Score:</strong>
+<span class='badge bg-{{ "success" if user.credit_score > 700 else "warning" if user.credit_score > 600 else "danger" }}'>{{ user.credit_score }}</span>
+</div>
+<div class='col-md-4'>
+<strong>Last Update:</strong> {{ user.last_score_update.strftime('%Y-%m-%d') if user.last_score_update else 'Never' }}
+</div>
+</div>
+</div>
+{% if history %}
+<div class='table-responsive'>
+<table class='table align-middle'>
+<thead>
+<tr>
+<th>Date</th>
+<th>Old Score</th>
+<th>New Score</th>
+<th>Change</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+{% for h in history %}
+<tr>
+<td><small>{{ h.created_at.strftime('%Y-%m-%d %H:%M') if h.created_at else '-' }}</small></td>
+<td><span class='badge bg-secondary'>{{ h.old_score }}</span></td>
+<td><span class='badge bg-{{ "success" if h.new_score > h.old_score else "danger" if h.new_score < h.old_score else "secondary" }}'>{{ h.new_score }}</span></td>
+<td>
+<span class='{{ "text-success" if h.new_score > h.old_score else "text-danger" if h.new_score < h.old_score else "text-muted" }}'>
+{{ "+" if h.new_score > h.old_score else "" }}{{ h.new_score - h.old_score }}
+</span>
+</td>
+<td>{{ h.reason or '-' }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<div class='alert alert-info'>No credit score history available.</div>
+{% endif %}
+</div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - YoCoin{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card p-4">
+            <h3 class="fw-bold mb-4"><i class="bi bi-person-circle me-2" style="color:var(--p)"></i>My Profile</h3>
+
+            <!-- Profile Picture Section -->
+            <div class="text-center mb-4">
+                {% if user.image_file %}
+                <img src="{{ url_for('static', filename='profile_pics/' + user.image_file) }}"
+                     alt="Profile Picture"
+                     class="rounded-circle mb-3"
+                     style="width:120px;height:120px;object-fit:cover;border:4px solid var(--a);">
+                {% else %}
+                <div class="profile-pic-placeholder mb-3" style="width:120px;height:120px;font-size:2.5rem;">
+                    {{ user.name[:2].upper() if user.name else 'U' }}
+                </div>
+                {% endif %}
+            </div>
+
+            <form method="POST" enctype="multipart/form-data">
+                <!-- Profile Picture Upload -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Profile Picture</label>
+                    <input type="file" name="picture" class="form-control" accept="image/*">
+                    <small class="text-muted">Allowed: JPG, PNG, GIF (max 2MB)</small>
+                </div>
+
+                <!-- Name -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Full Name</label>
+                    <input type="text" name="name" class="form-control fc" value="{{ user.name if user.name else '' }}" required>
+                </div>
+
+<!-- Email (read-only) -->
+<div class='mb-3'>
+<label class='form-label fw-bold'>Email</label>
+<div class='input-group'>
+<input type='email' class='form-control' value='{{ user.email if user.email else '' }}' readonly>
+{% if user.email_verified %}
+<span class='input-group-text bg-success text-white'><i class='bi bi-check-circle-fill'></i> Verified</span>
+{% else %}
+<span class='input-group-text bg-warning text-dark'><i class='bi bi-exclamation-circle'></i> Unverified</span>
+<a href='{{ url_for("resend_verification") }}' class='btn btn-outline-warning btn-sm'>Verify</a>
+{% endif %}
+</div></div>
+
+                <!-- Phone -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Phone</label>
+                    <input type="text" name="phone" class="form-control fc" value="{{ user.phone if user.phone else '' }}">
+                </div>
+
+                <!-- Region (read-only) -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Region</label>
+                    <input type="text" class="form-control" value="{{ user.region if user.region else '' }}" readonly>
+                </div>
+
+                <!-- National ID (read-only) -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">National ID</label>
+                    <input type="text" class="form-control" value="{{ user.national_id if user.national_id else '' }}" readonly>
+                </div>
+
+                <!-- Credit Score (read-only) -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Credit Score</label>
+                    <input type="text" class="form-control" value="{{ user['credit_score'] if user['credit_score'] else 'Not set' }}" readonly>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-p">Save Changes</button>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+
+            <hr class='my-4'>
+            <h5 class='fw-bold mb-3'><i class='bi bi-shield-lock me-2'></i>Two-Factor Authentication</h5>
+            {% if user.two_factor_enabled %}
+            <div class='alert alert-success d-flex justify-content-between align-items-center'>
+                <div>
+                    <i class='bi bi-check-circle me-2'></i>
+                    <strong>2FA is enabled</strong>
+                    <p class='mb-0 small text-muted'>Your account is protected with two-factor authentication</p>
+                </div>
+                <a href='{{ url_for("disable_2fa") }}' class='btn btn-outline-danger btn-sm'>Disable</a>
+            </div>
+            {% else %}
+            <div class='alert alert-warning d-flex justify-content-between align-items-center'>
+                <div>
+                    <i class='bi bi-exclamation-triangle me-2'></i>
+                    <strong>2FA is not enabled</strong>
+                    <p class='mb-0 small text-muted'>Add an extra layer of security to your account</p>
+                </div>
+                <a href='{{ url_for("setup_2fa") }}' class='btn btn-p btn-sm'>Enable 2FA</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

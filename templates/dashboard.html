@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - YoCoin{% endblock %}
+
+{% block content %}
+<div class='d-flex justify-content-between align-items-center mb-4'>
+<div class='d-flex align-items-center gap-3'>
+{% if session.get('profile_image') %}
+<img src="{{ url_for('static', filename='profile_pics/' + session['profile_image']) }}" class='profile-pic-lg' alt='Profile'>
+{% else %}
+<div class='profile-pic-placeholder-lg'>{{ session["name"][:2].upper() }}</div>
+{% endif %}
+<div><h2 class='fw-bold mb-0'>Hello, {{ session["name"].split()[0] }}</h2><p class='text-muted mb-0'>Welcome to your dashboard</p></div>
+</div>
+</div>
+
+{% if kyc_status != 'verified' %}
+<div class='alert alert-warning alert-dismissible fade show'>
+<i class='bi bi-exclamation-triangle me-2'></i>
+<strong>KYC Verification Required!</strong> Complete your KYC verification to apply for loans.
+<a href="{{ url_for('kyc_upload') }}" class='btn btn-sm btn-p ms-2'>Complete KYC</a>
+<button type='button' class='btn-close' data-bs-dismiss='alert'></button>
+</div>
+{% endif %}
+
+{% if pending_loans and pending_loans.pending_count > 0 %}
+<div class='alert alert-info alert-dismissible fade show'>
+<i class='bi bi-clock me-2'></i>
+You have <strong>{{ pending_loans.pending_count }}</strong> loan application(s) pending review.
+<button type='button' class='btn-close' data-bs-dismiss='alert'></button>
+</div>
+{% endif %}
+
+<div class='card p-4 mb-4' style='background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;'>
+<div class='row align-items-center'>
+<div class='col-8'><p class='mb-1 opacity-75'>Your Balance</p><h1 class='display-4 fw-bold mb-0'>{{ "{:,}".format(user.yocoin_balance|int if user and user.yocoin_balance else 0) }} <small>UGX</small></h1></div>
+<div class='col-4 text-end'><i class='bi bi-wallet2 fs-1 opacity-50'></i></div>
+</div>
+</div>
+
+<div class='row g-3 mb-4'>
+<div class='col-6 col-md-3'><a href="{{ url_for('apply_loan') }}" class='quick-btn text-center d-block'><i class='bi bi-plus-circle fs-3 mb-2 d-block'></i><strong class='small'>Apply Loan</strong></a></div>
+<div class='col-6 col-md-3'>{% if loan_summary and loan_summary.active_loans and loan_summary.active_loans|length > 0 %}<a href="{{ url_for('repayment') }}" class='quick-btn text-center d-block position-relative'><i class='bi bi-credit-card fs-3 mb-2 d-block'></i><strong class='small'>Repay</strong><span class='badge bg-danger position-absolute top-0 end-0' style='font-size:0.6rem;'>{{ loan_summary.active_loans|length }}</span><small class='d-block text-muted' style='font-size:0.6rem;'>UGX {{ "{:,}".format(loan_summary.active_loans[0].balance|int) }}</small></a>{% else %}<a href="{{ url_for('apply_loan') }}" class='quick-btn text-center d-block'><i class='bi bi-credit-card fs-3 mb-2 d-block'></i><strong class='small'>Repay</strong><small class='d-block text-muted' style='font-size:0.6rem;'>No active loans</small></a>{% endif %}</div>
+<div class='col-6 col-md-3'><a href="{{ url_for('kyc_upload') }}" class='quick-btn text-center d-block'><i class='bi bi-shield-check fs-3 mb-2 d-block'></i><strong class='small'>KYC</strong></a></div>
+<div class='col-6 col-md-3'><a href="{{ url_for('profile') }}" class='quick-btn text-center d-block'><i class='bi bi-person fs-3 mb-2 d-block'></i><strong class='small'>Profile</strong></a></div>
+</div>
+
+<div class='row g-3 mb-4'>
+<div class='col-md-6'>
+<div class='card p-4'>
+<h5 class='fw-bold mb-3'><i class='bi bi-graph-up me-2' style='color:var(--p)'></i>Credit Score</h5>
+<div class='d-flex justify-content-between align-items-center mb-2'>
+<span class='fs-3 fw-bold'>{{ user.credit_score if user and user.credit_score else 500 }}</span>
+<span class='badge bg-{{ score_tier.color }} fs-6'>{{ score_tier.tier }}</span>
+</div>
+<div class='progress mb-2' style='height: 20px;'>
+<div class='progress-bar bg-{{ score_tier.color }}' role='progressbar' style='width: {{ ((user.credit_score - 300) / 550 * 100)|int if user and user.credit_score else 36 }}%'>{{ user.credit_score if user and user.credit_score else 500 }}</div>
+</div>
+<small class='text-muted'>Range: 300 - 850 | Best rate: {{ score_tier.min_rate }}% | Max loan: UGX {{ "{:,}".format(score_tier.max_loan) }}</small>
+</div>
+</div>
+<div class='col-md-6'>
+<div class='card p-4'>
+<h5 class='fw-bold mb-3'><i class='bi bi-pie-chart me-2' style='color:var(--p)'></i>Loan Summary</h5>
+{% if loan_summary.summary %}
+<div class='row text-center'>
+<div class='col-4'><div class='fw-bold text-warning'>{{ loan_summary.summary.pending }}</div><small>Pending</small></div>
+<div class='col-4'><div class='fw-bold text-success'>{{ loan_summary.summary.active }}</div><small>Active</small></div>
+<div class='col-4'><div class='fw-bold text-primary'>{{ loan_summary.summary.repaid }}</div><small>Repaid</small></div>
+</div>
+{% if loan_summary.active_loans %}
+<hr>
+{% for loan in loan_summary.active_loans[:3] %}
+<div class='d-flex justify-content-between align-items-center py-1'>
+<small><a href='{{ url_for("loan_details", loan_id=loan.loan_id) }}' class='text-decoration-none'>Loan #{{ loan.loan_id[:8] }}</a></small>
+<small class='fw-bold'>UGX {{ "{:,}".format(loan.balance|int) }}</small>
+{% if loan.days_until_due is not none %}
+{% if loan.is_overdue %}
+<span class='badge bg-danger'>{{ loan.days_until_due | abs }} days overdue</span>
+{% elif loan.days_until_due <= 7 %}
+<span class='badge bg-warning'>{{ loan.days_until_due }} days left</span>
+{% else %}
+<span class='badge bg-success'>{{ loan.days_until_due }} days left</span>
+{% endif %}
+{% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% else %}
+<p class='text-muted mb-0'>No loan history yet.</p>
+{% endif %}
+</div>
+</div>
+</div>
+
+{% if repayment_progress %}
+<div class='row g-3 mb-4'>
+<div class='col-md-6'>
+<div class='card p-4'>
+<h5 class='fw-bold mb-3'><i class='bi bi-bar-chart-line me-2' style='color:var(--p)'></i>Repayment Progress</h5>
+{% for rp in repayment_progress %}
+<div class='mb-3'>
+<div class='d-flex justify-content-between mb-1'>
+<small class='fw-semibold'>Loan #{{ rp.loan_id }}</small>
+<small class='text-muted'>{{ '{:,.0f}'.format(rp.paid) }} / {{ '{:,.0f}'.format(rp.amount) }} UGX</small>
+</div>
+<div class='progress' style='height:10px'>
+<div class='progress-bar bg-{{ "success" if rp.pct >= 75 else "warning" if rp.pct >= 40 else "danger" }}' style='width:{{ rp.pct }}%'></div>
+</div>
+<small class='text-muted'>{{ rp.pct }}% repaid</small>
+</div>{% endfor %}
+</div></div>
+</div>{% endif %}
+
+<div class='row'>
+<div class='col-lg-6 mb-4 mb-lg-0'>
+<div class='card p-4'>
+<h5 class='fw-bold mb-3'><i class='bi bi-list-check me-2' style='color:var(--p)'></i>Your Loans</h5>
+{% if loans %}
+{% for loan in loans %}
+<div class='border rounded p-3 mb-2'>
+<div class='d-flex justify-content-between align-items-start'>
+<div>
+<span class='fw-bold'>{{ "{:,}".format(loan.amount|int) }} UGX</span>
+<span class='badge bg-{{ "success" if loan.status=="approved" else "warning" if loan.status=="pending" else "danger" if loan.status=="defaulted" else "secondary" }}'>{{ loan.status }}</span>
+</div>
+<div class='d-flex gap-1'>
+<a href='{{ url_for("loan_details", loan_id=loan.loan_id) }}' class='btn btn-sm btn-outline-primary'>View</a>
+{% if loan.status in ['approved', 'disbursed'] %}
+<a href='{{ url_for("loan_topup", loan_id=loan.loan_id) }}' class='btn btn-sm btn-outline-success'>Top-up</a>
+{% endif %}
+</div></div>
+<small class='text-muted'>{{ loan.purpose }} - {{ loan.term_months }} months at {{ loan.interest_rate }}%</small>
+{% if loan.due_date %}
+<small class='text-muted d-block'>Due: {{ loan.due_date.strftime('%Y-%m-%d') if loan.due_date else 'N/A' }}</small>
+{% endif %}
+</div>
+{% endfor %}
+{% else %}
+<div class='text-center py-4'>
+<i class='bi bi-inbox fs-1 text-muted'></i>
+<p class='text-muted mb-0'>No loans yet. <a href="{{ url_for('apply_loan') }}" style='color:var(--p)'>Apply for one</a></p>
+</div>
+{% endif %}
+</div>
+</div>
+<div class='col-lg-6'>
+<div class='card p-4'>
+<h5 class='fw-bold mb-3'><i class='bi bi-clock-history me-2' style='color:var(--p)'></i>Recent Activity</h5>
+{% if transactions %}
+{% for tx in transactions[:5] %}
+<div class='d-flex align-items-center py-2 border-bottom'>
+<div class='me-3'><i class='bi bi-arrow-{{ "down" if tx.recipient_address == session["user_id"] else "up" }}-circle fs-4' style='color:var(--p)'></i></div>
+<div class='flex-grow-1'><div class='fw-bold small'>{{ tx.message[:30] if tx.message else "Transaction" }}</div><small class='text-muted'>{{ tx.timestamp.strftime("%b %d, %Y") if tx.timestamp else "Recent" }}</small></div>
+<div class='text-end'><div class='fw-bold {{ "text-success" if tx.recipient_address == session["user_id"] else "text-danger" }}'>{{ "+" if tx.recipient_address == session["user_id"] else "-" }}{{ "{:,}".format(tx.amount|int) }}</div></div>
+</div>
+{% endfor %}
+{% else %}
+<div class='text-center py-4'>
+<i class='bi bi-clock-history fs-1 text-muted'></i>
+<p class='text-muted mb-0'>No transactions yet</p>
+</div>
+{% endif %}
+</div>
+</div>
+</div>
+
+{% if loan_history_labels %}
+<div class='card p-4 mt-4'>
+<h5 class='fw-bold mb-3'><i class='bi bi-graph-up me-2' style='color:var(--p)'></i>Loan Application History</h5>
+<canvas id='loanHistoryChart' height='100'></canvas>
+</div>{% endif %}
+
+<div class='card p-3 mt-4 overflow-hidden'>
+<div class='d-flex justify-content-between align-items-center mb-2'>
+<h5 class='fw-bold mb-0' style='font-size:1rem;'><i class='bi bi-newspaper me-2' style='color:var(--p)'></i>Market News</h5>
+<small class='text-muted' id='newsTimer'>Today's headlines</small>
+</div>
+<div class='news-track-wrap'>
+<div class='news-track' id='newsTrack'>
+{% for item in news_items %}<div class='news-cell'>
+<a href='{{ item.url }}' target='_blank' rel='noopener noreferrer' class='text-decoration-none text-dark'>
+<div class='news-card'><img src='{{ item.image }}' alt='' class='news-thumb' loading='lazy' onerror='this.style.display="none"'><div class='news-card-body'><div class='d-flex justify-content-between align-items-center mb-1'><span class='badge bg-primary' style='font-size:0.6rem;'>{{ item.category }}</span><small class='text-muted' style='font-size:0.6rem;'>{{ item.date }}</small></div><div class='fw-bold' style='font-size:0.75rem;line-height:1.2;'>{{ item.title }}</div><small class='text-muted' style='font-size:0.65rem;'>{{ item.summary[:50] }}...</small></div></div>
+</a></div>{% endfor %}
+{% for item in news_items %}<div class='news-cell'>
+<a href='{{ item.url }}' target='_blank' rel='noopener noreferrer' class='text-decoration-none text-dark'>
+<div class='news-card'><img src='{{ item.image }}' alt='' class='news-thumb' loading='lazy' onerror='this.style.display="none"'><div class='news-card-body'><div class='d-flex justify-content-between align-items-center mb-1'><span class='badge bg-primary' style='font-size:0.6rem;'>{{ item.category }}</span><small class='text-muted' style='font-size:0.6rem;'>{{ item.date }}</small></div><div class='fw-bold' style='font-size:0.75rem;line-height:1.2;'>{{ item.title }}</div><small class='text-muted' style='font-size:0.65rem;'>{{ item.summary[:50] }}...</small></div></div>
+</a></div>{% endfor %}
+</div>
+</div>
+</div>
+<style>
+.news-track-wrap { overflow: hidden; width: 100%; }
+.news-track { display: flex; gap: 12px; white-space: nowrap; width: max-content; animation: scroll-left 240s linear infinite; }
+.news-track:hover { animation-play-state: paused; }
+.news-cell { flex: 0 0 auto; display: inline-flex; }
+.news-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; width: 260px; transition: box-shadow 0.2s; }
+.news-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+.news-thumb { width: 100%; height: 100px; object-fit: cover; display: block; background: #f0f0f0; }
+.news-card-body { padding: 8px 10px 10px; border-left: 3px solid var(--p); }
+@keyframes scroll-left {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'></script>
+<script>
+{% if loan_history_labels %}
+(function(){
+var ctx = document.getElementById('loanHistoryChart');
+if (!ctx) return;
+var labels = {{ loan_history_labels | tojson }};
+var data = {{ loan_history_data | tojson }};
+new Chart(ctx, {
+    type: 'bar',
+    data: { labels: labels, datasets: [{ label: 'Applications', data: data, backgroundColor: 'rgba(34,139,34,0.6)', borderColor: '#228B22', borderWidth: 1, borderRadius: 4 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+})();
+{% endif %}
+</script>
+{% endblock %}
