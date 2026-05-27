@@ -1,0 +1,17 @@
+torch>=2.1
+torchvision
+timm                    # pretrained vision models incl. HRNet
+albumentations          # image augmentation
+captum                  # PyTorch-native XAI (Integrated Gradients)
+scikit-learn
+pandas
+numpy
+pillow
+matplotlib
+plotly                  # interactive charts for analytics dashboard
+gradio>=6.0             # doctor-facing web UI (legacy)
+opencv-python           # melanin normalisation in samplesEquity
+fastapi                 # REST API for the new clinical dashboard
+uvicorn                 # ASGI server for the dashboard API
+python-multipart        # form data parsing for file uploads
+bcrypt                  # password hashing
