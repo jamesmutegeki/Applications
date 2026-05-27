@@ -649,8 +649,22 @@ Sitemap: https://dermai.onrender.com/sitemap.xml
     async def create_patient(req: PatientRequest, _auth=Depends(require_auth)):
         patients = _load_patients()
         new_id = req.id or f"PAT-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{len(patients) + 1:04d}"
-        if any(p["id"] == new_id for p in patients):
-            raise HTTPException(status_code=409, detail="Patient ID already exists.")
+        existing_ids = {p["id"] for p in patients}
+        if new_id in existing_ids:
+            max_n = 0
+            today = datetime.now(timezone.utc).strftime('%Y%m%d')
+            for pid in existing_ids:
+                if pid.startswith(f"PAT-{today}-"):
+                    try:
+                        n = int(pid.split("-")[-1])
+                        if n > max_n:
+                            max_n = n
+                    except ValueError:
+                        pass
+            new_id = f"PAT-{today}-{max_n + 1:04d}"
+            while new_id in existing_ids:
+                max_n += 1
+                new_id = f"PAT-{today}-{max_n + 1:04d}"
         patient = {
             "id": new_id,
             "name": req.name,
