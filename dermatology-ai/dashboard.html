@@ -291,7 +291,7 @@ body {
 .profile-info-item .value { color: var(--text); font-weight: 500; }
 
 /* Patient Queue card */
-.queue-list { display: flex; flex-direction: column; gap: 6px; }
+.queue-list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
 .queue-item {
   display: flex; align-items: center; gap: 12px;
   padding: 10px 12px; border-radius: 8px;
@@ -1039,10 +1039,10 @@ select,
   </header>
 
   <!-- Notifications Bar -->
-  <div class="notif-bar" id="notifBar">
+  <div class="notif-bar" id="notifBar" style="cursor:pointer;" title="Click to filter queue">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <span><strong>Reminder:</strong> 2 follow-ups pending &bull; 1 urgent case awaiting review</span>
-    <button class="notif-close" id="notifClose">&times;</button>
+    <span id="notifText"><strong>Reminder:</strong> Loading...</span>
+    <button class="notif-close" id="notifClose" style="pointer-events:auto;">&times;</button>
   </div>
 
   <!-- Grid -->
@@ -1225,30 +1225,7 @@ select,
           </div>
         </div>
         <div class="profile-info-grid">
-          <div class="profile-info-item"><div class="label">National ID (NIN)</div><div class="value" id="docProfileNin">—</div></div>
-          <div class="profile-info-item"><div class="label">Employee ID</div><div class="value" id="docProfileEmpId">DOC-001</div></div>
-          <div class="profile-info-item">
-            <div class="label">Department</div>
-            <select id="docDepartment" style="width:100%;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:var(--font);color:var(--text);background:var(--bg);outline:none;margin-top:2px;">
-              <option value="dermatology" selected>Dermatology</option>
-              <option value="pediatrics">Pediatrics</option>
-              <option value="oncology">Oncology</option>
-              <option value="general_practice">General Practice</option>
-              <option value="surgery">Surgery</option>
-              <option value="pathology">Pathology</option>
-            </select>
-          </div>
-          <div class="profile-info-item">
-            <div class="label">Specialty</div>
-            <select id="docSpecialty" style="width:100%;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:var(--font);color:var(--text);background:var(--bg);outline:none;margin-top:2px;">
-              <option value="general_derm" selected>General Dermatology</option>
-              <option value="surgical_derm">Surgical Dermatology</option>
-              <option value="pediatric_derm">Pediatric Dermatology</option>
-              <option value="derm_path">Dermatopathology</option>
-              <option value="cosmetic_derm">Cosmetic Dermatology</option>
-              <option value="derm_oncology">Dermato-oncology</option>
-            </select>
-          </div>
+          <div class="profile-info-item"><div class="label">National ID</div><div class="value" id="docProfileNin">—</div></div>
           <div class="profile-info-item"><div class="label">Last Login</div><div class="value" id="docProfileLastLogin">Today, 08:42 AM</div></div>
         </div>
       </div>
@@ -1934,6 +1911,29 @@ Plan:
   </div>
 </div>
 
+<!-- ==================== PATIENT QUEUE POPUP MODAL ==================== -->
+<div class="modal-overlay" id="queuePopupModal">
+  <div class="modal-card" style="max-width:420px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3 style="font-size:1rem;">Patient Details</h3>
+      <span id="queuePopupClose" style="cursor:pointer;color:var(--text-muted);font-size:1.2rem;line-height:1;">&times;</span>
+    </div>
+    <div id="queuePopupBody" style="display:grid;gap:10px;font-size:0.82rem;">
+      <div><strong>Name:</strong> <span id="qpName"></span></div>
+      <div><strong>ID:</strong> <span id="qpId"></span></div>
+      <div><strong>Age:</strong> <span id="qpAge"></span></div>
+      <div><strong>Gender:</strong> <span id="qpGender"></span></div>
+      <div><strong>Diagnosis:</strong> <span id="qpDiagnosis"></span></div>
+      <div><strong>Status:</strong> <span id="qpStatus"></span></div>
+      <div><strong>Last Visit:</strong> <span id="qpLastVisit"></span></div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-primary" id="queuePopupEdit" style="padding:8px 20px;border:none;border-radius:8px;font-size:0.8rem;font-weight:600;font-family:var(--font);background:var(--accent);color:#fff;cursor:pointer;">Edit Patient</button>
+      <button class="btn btn-outline" id="queuePopupCancel" style="padding:8px 20px;border:1.5px solid var(--border);border-radius:8px;font-size:0.8rem;font-weight:500;font-family:var(--font);background:transparent;color:var(--text-secondary);cursor:pointer;">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- ==================== JAVASCRIPT ==================== -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script>
@@ -2094,7 +2094,9 @@ loginBtn.addEventListener('click', async function() {
       loginOverlay.classList.add('hidden');
       dashboard.classList.remove('visible');
       dashboard.style.display = 'none';
-      document.getElementById('adminDashboard').classList.add('visible');
+      const adminDash = document.getElementById('adminDashboard');
+      adminDash.style.display = 'block';
+      adminDash.classList.add('visible');
       setTimeout(() => { loadDoctors(); }, 100);
     } else {
       res = await fetch('/api/login', {
@@ -2119,8 +2121,9 @@ loginBtn.addEventListener('click', async function() {
         if (photoDiv) photoDiv.innerHTML = `<img src="${state.user.photo}" alt="Profile Photo">`;
       }
       document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-      document.getElementById('adminDashboard').classList.remove('visible');
-      document.getElementById('adminDashboard').style.display = 'none';
+      const adminDash = document.getElementById('adminDashboard');
+      adminDash.classList.remove('visible');
+      adminDash.style.display = 'none';
       dashboard.style.display = '';
       loginOverlay.classList.add('hidden');
       dashboard.classList.add('visible');
@@ -2148,15 +2151,16 @@ emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') passInput.f
 // ==================== ACCESS CODE SHOW/HIDE ====================
 $('passToggle').addEventListener('click', function() {
   const input = $('passInput');
-  const icon = $('passToggleIcon');
+  const svg = this.querySelector('svg');
+  if (!svg) return;
   if (input.type === 'password') {
     input.type = 'text';
     this.title = 'Hide password';
-    icon.outerHTML = '<svg id="passToggleIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+    svg.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
   } else {
     input.type = 'password';
     this.title = 'Show password';
-    icon.outerHTML = '<svg id="passToggleIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    svg.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
   }
 });
 
@@ -2166,8 +2170,9 @@ logoutBtn.addEventListener('click', function() {
   state.user = { name: 'Dr. James Doe', title: 'Board-Certified Dermatologist', initials: 'JD', permissions: {} };
   dashboard.classList.remove('visible');
   dashboard.style.display = '';
-  document.getElementById('adminDashboard').classList.remove('visible');
-  document.getElementById('adminDashboard').style.display = 'none';
+  const adminDash = document.getElementById('adminDashboard');
+  adminDash.classList.remove('visible');
+  adminDash.style.display = 'none';
   loginOverlay.classList.remove('hidden');
   loginBtn.classList.remove('success');
   loginBtn.disabled = false;
@@ -2216,6 +2221,9 @@ logoutBtn.addEventListener('click', function() {
 // Admin logout
 const adminLogoutBtn = document.getElementById('adminLogoutBtn');
 if (adminLogoutBtn) adminLogoutBtn.addEventListener('click', function() {
+  const adminDash = document.getElementById('adminDashboard');
+  adminDash.classList.remove('visible');
+  adminDash.style.display = 'none';
   logoutBtn.click();
 });
 
@@ -3058,8 +3066,47 @@ $('quickExport').addEventListener('click', function() {
 });
 
 // ==================== NOTIFICATIONS BAR ====================
-$('notifClose').addEventListener('click', function() {
+let notifDismissTimer = null;
+
+function updateNotifBar(patients) {
+  const bar = document.getElementById('notifBar');
+  const text = document.getElementById('notifText');
+  if (!bar || !text) return;
+  const followups = patients.filter(p => p.status === 'followup').length;
+  const urgents = patients.filter(p => p.visits && p.visits.length && p.visits[p.visits.length-1].tag === 'urgent').length;
+  const total = followups + urgents;
+  if (total === 0) {
+    bar.style.display = 'none';
+    return;
+  }
+  const parts = [];
+  if (followups) parts.push(`${followups} follow-up${followups > 1 ? 's' : ''} pending`);
+  if (urgents) parts.push(`${urgents} urgent case${urgents > 1 ? 's' : ''} awaiting review`);
+  text.innerHTML = `<strong>Reminder:</strong> ${parts.join(' &bull; ')}`;
+  bar.style.display = '';
+  bar.dataset.notifData = JSON.stringify({ followups: followups > 0, urgents: urgents > 0 });
+  clearTimeout(notifDismissTimer);
+  notifDismissTimer = setTimeout(() => { bar.style.display = 'none'; }, 10000);
+}
+
+$('notifBar').addEventListener('click', function(e) {
+  if (e.target.closest('#notifClose')) return;
+  const filter = $('queueFilter');
+  if (filter) {
+    const data = this.dataset.notifData ? JSON.parse(this.dataset.notifData) : {};
+    if (data.urgents) filter.value = 'urgent';
+    else if (data.followups) filter.value = 'followup';
+    else filter.value = 'all';
+    filter.dispatchEvent(new Event('change'));
+  }
+  this.style.display = 'none';
+  clearTimeout(notifDismissTimer);
+});
+
+$('notifClose').addEventListener('click', function(e) {
+  e.stopPropagation();
   document.getElementById('notifBar').style.display = 'none';
+  clearTimeout(notifDismissTimer);
 });
 
 // ==================== PROFILE PHOTO UPLOAD (Doctor) ====================
@@ -3180,12 +3227,46 @@ function showToast(msg) {
   }, 2500);
 }
 
-// Queue click — load patient
+// Queue click — show popup
 $('queueList').addEventListener('click', function(e) {
   const item = e.target.closest('.queue-item');
   if (!item) return;
-  loadPatientIntoForm(item.dataset.id);
+  showPatientPopup(item.dataset.id);
 });
+
+// Queue popup modal
+const qpModal = $('queuePopupModal');
+$('queuePopupCancel').addEventListener('click', function() { qpModal.classList.remove('visible'); });
+$('queuePopupClose').addEventListener('click', function() { qpModal.classList.remove('visible'); });
+qpModal.addEventListener('click', function(e) { if (e.target === qpModal) qpModal.classList.remove('visible'); });
+$('queuePopupEdit').addEventListener('click', function() {
+  qpModal.classList.remove('visible');
+  const id = qpModal.dataset.patientId;
+  if (id) loadPatientIntoForm(id);
+});
+
+async function showPatientPopup(id) {
+  try {
+    const res = await api('/api/patients/' + id);
+    if (!res.ok) { showToast('Failed to load patient.'); return; }
+    const data = await res.json();
+    const p = data.patient;
+    const visits = p.visits || [];
+    const lastVisit = visits.length ? visits[visits.length-1].date + ' — ' + visits[visits.length-1].desc.slice(0, 60) : 'None';
+    $('qpName').textContent = p.name || '—';
+    $('qpId').textContent = p.id || '—';
+    $('qpAge').textContent = p.age || '—';
+    $('qpGender').textContent = p.gender || '—';
+    $('qpDiagnosis').textContent = p.diagnosis || '—';
+    const statusMap = { active: 'In Treatment', followup: 'Follow Up', consultation: 'Consultation', completed: 'Done' };
+    $('qpStatus').textContent = statusMap[p.status] || p.status || '—';
+    $('qpLastVisit').textContent = lastVisit;
+    qpModal.dataset.patientId = id;
+    qpModal.classList.add('visible');
+  } catch (err) {
+    showToast('Error loading patient.');
+  }
+}
 
 // Queue filter
 $('queueFilter').addEventListener('change', function() {
@@ -3454,6 +3535,7 @@ async function loadPatients() {
       </div>`;
     }).join('');
     $('queueCount').textContent = patients.length + ' patient' + (patients.length !== 1 ? 's' : '');
+    updateNotifBar(patients);
   } catch (e) { console.error('Failed to load patients:', e); }
 }
 
