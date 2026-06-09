@@ -1,0 +1,68 @@
+import { PracticeArea } from "../types";
+
+export const practiceAreas: PracticeArea[] = [
+  {
+    id: "1",
+    title: "Corporate & Commercial",
+    description: "Comprehensive legal advisory on corporate structuring, compliance, mergers, acquisitions, and strategic transactions for businesses of all sizes.",
+    icon: "Building2",
+    slug: "corporate-commercial",
+    color: "from-blue-600 to-blue-800",
+  },
+  {
+    id: "2",
+    title: "Banking & Finance",
+    description: "Expert guidance on banking regulations, financial transactions, loan agreements, and compliance with financial sector laws.",
+    icon: "Landmark",
+    slug: "banking-finance",
+    color: "from-emerald-600 to-emerald-800",
+  },
+  {
+    id: "3",
+    title: "Real Estate & Property",
+    description: "Legal support for property transactions, commercial leasing, land disputes, and real estate development projects.",
+    icon: "Building",
+    slug: "real-estate-property",
+    color: "from-amber-600 to-amber-800",
+  },
+  {
+    id: "4",
+    title: "Intellectual Property",
+    description: "Protection and enforcement of intellectual assets including trademarks, copyrights, patents, and licensing agreements.",
+    icon: "Lightbulb",
+    slug: "intellectual-property",
+    color: "from-purple-600 to-purple-800",
+  },
+  {
+    id: "5",
+    title: "Dispute Resolution",
+    description: "Strategic advocacy and alternative dispute resolution including arbitration, mediation, and litigation representation.",
+    icon: "Scale",
+    slug: "dispute-resolution",
+    color: "from-red-600 to-red-800",
+  },
+  {
+    id: "6",
+    title: "Mergers & Acquisitions",
+    description: "End-to-end M&A advisory from due diligence and valuation to negotiation, documentation, and post-merger integration.",
+    icon: "GitMerge",
+    slug: "mergers-acquisitions",
+    color: "from-indigo-600 to-indigo-800",
+  },
+  {
+    id: "7",
+    title: "Employment & Labor",
+    description: "Guidance on employment contracts, labor disputes, workplace policies, and regulatory compliance for employers.",
+    icon: "Users",
+    slug: "employment-labor",
+    color: "from-teal-600 to-teal-800",
+  },
+  {
+    id: "8",
+    title: "Tax & Regulatory",
+    description: "Strategic tax planning, compliance advisory, and representation before tax authorities and regulatory bodies.",
+    icon: "Receipt",
+    slug: "tax-regulatory",
+    color: "from-orange-600 to-orange-800",
+  },
+];
