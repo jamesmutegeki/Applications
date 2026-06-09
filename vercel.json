@@ -1,7 +1,5 @@
 {
-  "buildCommand": "cd client && npm install && npm run build",
-  "outputDirectory": "client/dist",
-  "devCommand": "cd client && npm run dev",
-  "installCommand": "cd client && npm install",
+  "buildCommand": "cd ccp-digest/client && npm install && npm run build",
+  "outputDirectory": "ccp-digest/client/dist",
   "framework": "vite"
 }
