@@ -91,6 +91,17 @@ model User {
   createdInvoices     Invoice[]        @relation("BillingOfficerInvoices")
   insuranceClaims     InsuranceClaim[] @relation("PatientClaims")
   processedClaims     InsuranceClaim[] @relation("ProcessorClaims")
+  labResultsAsPatient LabResult[]      @relation("PatientLabResults")
+  labResultsAsDoctor  LabResult[]      @relation("DoctorLabResults")
+  dispensingsAsPatient DispensingLog[] @relation("PatientDispensings")
+  dispensingsAsDispenser DispensingLog[] @relation("DispenserLogs")
+  immunizationsAsPatient Immunization[] @relation("PatientImmunizations")
+  immunizationsAsProvider Immunization[] @relation("ProviderImmunizations")
+  referralsAsPatient  Referral[]       @relation("PatientReferrals")
+  referralsAsReferringDoctor Referral[] @relation("ReferringDoctor")
+  referralsAsReferredDoctor Referral[]  @relation("ReferredDoctor")
+  leaveRequests       LeaveRequest[]   @relation("StaffLeaveRequests")
+  approvedLeaves      LeaveRequest[]   @relation("LeaveApprover")
 
   @@map("users")
 }
@@ -341,6 +352,155 @@ model AuditLog {
   @@index([resource, resourceId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model LabResult {
+  id            String   @id @default(cuid())
+  patientId     String
+  doctorId      String
+  testName      String
+  testCategory  String
+  result        String
+  normalRange   String?
+  unit          String?
+  status        String   @default("PENDING")
+  notes         String?
+  performedAt   DateTime @default(now())
+  resultDate    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  patient User @relation("PatientLabResults", fields: [patientId], references: [id])
+  doctor  User @relation("DoctorLabResults", fields: [doctorId], references: [id])
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@map("lab_results")
+}
+
+model PharmacyItem {
+  id             String   @id @default(cuid())
+  medicationName String
+  genericName    String?
+  category       String
+  stockQuantity  Int      @default(0)
+  unit           String   @default("tablet")
+  reorderLevel   Int      @default(10)
+  unitPrice      Decimal  @default(0)
+  expiryDate     DateTime?
+  supplier       String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  dispensingLogs DispensingLog[]
+
+  @@index([category])
+  @@map("pharmacy_items")
+}
+
+model DispensingLog {
+  id              String   @id @default(cuid())
+  pharmacyItemId  String
+  prescriptionId  String?
+  patientId       String
+  dispensedBy     String
+  quantity        Int
+  batchNumber     String?
+  notes           String?
+  dispensedAt     DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  item     PharmacyItem @relation(fields: [pharmacyItemId], references: [id])
+  patient  User         @relation("PatientDispensings", fields: [patientId], references: [id])
+  dispenser User        @relation("DispenserLogs", fields: [dispensedBy], references: [id])
+
+  @@map("dispensing_logs")
+}
+
+model Immunization {
+  id               String   @id @default(cuid())
+  patientId        String
+  administeredBy   String
+  vaccineName      String
+  batchNumber      String?
+  doseNumber       Int      @default(1)
+  administrationDate DateTime @default(now())
+  nextDoseDate     DateTime?
+  site             String?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  patient  User @relation("PatientImmunizations", fields: [patientId], references: [id])
+  provider User @relation("ProviderImmunizations", fields: [administeredBy], references: [id])
+
+  @@index([patientId])
+  @@map("immunizations")
+}
+
+model Referral {
+  id               String   @id @default(cuid())
+  patientId        String
+  referringDoctorId String
+  referredDoctorId  String?
+  department       String
+  priority         String   @default("NORMAL")
+  reason           String
+  notes            String?
+  status           String   @default("PENDING")
+  responseDate     DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  patient        User @relation("PatientReferrals", fields: [patientId], references: [id])
+  referringDoctor User @relation("ReferringDoctor", fields: [referringDoctorId], references: [id])
+  referredDoctor User? @relation("ReferredDoctor", fields: [referredDoctorId], references: [id])
+
+  @@index([patientId])
+  @@index([status])
+  @@map("referrals")
+}
+
+model LeaveRequest {
+  id         String   @id @default(cuid())
+  userId     String
+  startDate  DateTime
+  endDate    DateTime
+  type       String   @default("ANNUAL")
+  reason     String?
+  status     String   @default("PENDING")
+  approvedBy String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user    User  @relation("StaffLeaveRequests", fields: [userId], references: [id])
+  approver User? @relation("LeaveApprover", fields: [approvedBy], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("leave_requests")
+}
+
+model InventoryItem {
+  id            String   @id @default(cuid())
+  itemName      String
+  category      String
+  quantity      Int      @default(0)
+  unit          String   @default("piece")
+  reorderLevel  Int      @default(5)
+  unitPrice     Decimal  @default(0)
+  supplier      String?
+  location      String?
+  expiryDate    DateTime?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([quantity])
+  @@map("inventory_items")
 }
 
 model Session {

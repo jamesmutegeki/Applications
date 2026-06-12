@@ -21,6 +21,17 @@ import {
   ChevronLeft,
   Bell,
   Search,
+  FlaskConical,
+  Package,
+  Stethoscope,
+  Syringe,
+  Clock,
+  ClipboardList,
+  ArrowRightLeft,
+  TrendingUp,
+  Upload,
+  CalendarDays,
+  Warehouse,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import MedisphereLogo from '@/components/medisphere-logo';
@@ -44,6 +55,21 @@ const navigation: NavItem[] = [
   { label: 'Billing', href: '/dashboard/billing', icon: Receipt, roles: ['BILLING', 'PATIENT'] },
   { label: 'Insurance', href: '/dashboard/insurance', icon: Shield, roles: ['BILLING', 'PATIENT'] },
   { label: 'Patient Portal', href: '/dashboard/portal', icon: UserCircle, roles: ['PATIENT'] },
+  // Clinical
+  { label: 'Lab Results', href: '/dashboard/laboratory', icon: FlaskConical, roles: ['DOCTOR', 'NURSE', 'PATIENT'] },
+  { label: 'Pharmacy', href: '/dashboard/pharmacy', icon: Package, roles: ['DOCTOR', 'NURSE', 'ADMIN'] },
+  { label: 'Symptom Checker', href: '/dashboard/symptom-checker', icon: Stethoscope, roles: ['PATIENT'] },
+  { label: 'Immunizations', href: '/dashboard/immunizations', icon: Syringe, roles: ['DOCTOR', 'NURSE', 'PATIENT'] },
+  { label: 'Availability', href: '/dashboard/availability', icon: Clock, roles: ['DOCTOR', 'ADMIN'] },
+  { label: 'Intake Forms', href: '/dashboard/intake', icon: ClipboardList, roles: ['NURSE', 'ADMIN'] },
+  { label: 'Waitlist', href: '/dashboard/waitlist', icon: Users, roles: ['NURSE', 'ADMIN', 'DOCTOR'] },
+  // Administrative
+  { label: 'Referrals', href: '/dashboard/referrals', icon: ArrowRightLeft, roles: ['DOCTOR', 'ADMIN'] },
+  { label: 'Revenue', href: '/dashboard/revenue', icon: TrendingUp, roles: ['ADMIN', 'BILLING'] },
+  { label: 'Doctor Profiles', href: '/dashboard/doctor-profiles', icon: Upload, roles: ['ADMIN'] },
+  { label: 'Audit Log', href: '/dashboard/audit-log', icon: Shield, roles: ['ADMIN', 'SUPER_ADMIN'] },
+  { label: 'Leave Mgmt', href: '/dashboard/leave-management', icon: CalendarDays, roles: ['ADMIN', 'NURSE', 'DOCTOR'] },
+  { label: 'Inventory', href: '/dashboard/inventory', icon: Warehouse, roles: ['ADMIN', 'NURSE'] },
 ];
 
 const notifications = [
