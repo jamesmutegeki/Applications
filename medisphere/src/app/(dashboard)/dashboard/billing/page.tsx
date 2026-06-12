@@ -37,7 +37,7 @@ export default function BillingPage() {
           <h1 className="text-2xl font-bold text-gray-900">Billing & Invoicing</h1>
           <p className="text-gray-500 mt-1">Manage invoices, payments, and billing operations</p>
         </div>
-        <Button>
+        <Button onClick={() => alert('Coming soon')}>
           <Plus className="w-4 h-4 mr-2" />
           New Invoice
         </Button>
@@ -126,7 +126,7 @@ export default function BillingPage() {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <button className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors">
+                      <button onClick={() => alert('Coming soon')} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors">
                         <Download className="w-4 h-4" />
                       </button>
                     </td>

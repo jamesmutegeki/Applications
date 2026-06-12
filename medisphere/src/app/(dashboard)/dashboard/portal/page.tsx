@@ -99,7 +99,7 @@ export default function PatientPortalPage() {
                 </motion.div>
               ))}
             </div>
-            <Button variant="outline" className="w-full mt-4">
+            <Button variant="outline" className="w-full mt-4" onClick={() => alert('Coming soon')}>
               <Calendar className="w-4 h-4 mr-2" />
               Book New Appointment
             </Button>
@@ -134,7 +134,7 @@ export default function PatientPortalPage() {
                 </motion.div>
               ))}
             </div>
-            <Button variant="outline" className="w-full mt-4">
+            <Button variant="outline" className="w-full mt-4" onClick={() => alert('Coming soon')}>
               <Pill className="w-4 h-4 mr-2" />
               Request Refill
             </Button>

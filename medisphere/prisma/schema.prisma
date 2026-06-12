@@ -66,6 +66,7 @@ model User {
   lastName       String
   role           Role      @default(PATIENT)
   phone          String?
+  avatarUrl      String?
   dateOfBirth    DateTime?
   address        String?
   isActive       Boolean   @default(true)

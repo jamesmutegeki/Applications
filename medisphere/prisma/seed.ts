@@ -47,7 +47,7 @@ async function main() {
       { firstName: 'Jennifer', lastName: 'Wang', email: 'jennifer.w@email.com', phone: '555-0110' },
     ].map((p) =>
       prisma.user.create({
-        data: { ...p, passwordHash: password, role: 'PATIENT', dateOfBirth: new Date(1970 + Math.floor(Math.random() * 40), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1) },
+        data: { ...p, passwordHash: password, role: 'PATIENT', dateOfBirth: new Date(1970 + Math.floor(Math.random() * 40), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1), avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.firstName}${p.lastName}` },
       })
     )
   );
@@ -68,7 +68,7 @@ async function main() {
       prisma.user.create({
         data: {
           firstName: d.firstName, lastName: d.lastName, email: d.email,
-          passwordHash: password, role: 'DOCTOR', phone: '555-2' + Math.floor(100 + Math.random() * 900),
+          passwordHash: password, role: 'DOCTOR', phone: '555-2' + Math.floor(100 + Math.random() * 900), avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${d.firstName}${d.lastName}`,
           doctorProfile: {
             create: { licenseNumber: d.license, specialization: d.spec, department: d.dept, consultationFee: d.fee, isAvailable: true },
           },

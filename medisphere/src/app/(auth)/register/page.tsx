@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { User, Mail, Lock, Eye, EyeOff, ArrowRight, Stethoscope, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import MedisphereLogo from '@/components/medisphere-logo';
 
 const roles = [
   { value: 'PATIENT', label: 'Patient', icon: User },
@@ -43,9 +44,7 @@ export default function RegisterPage() {
     >
       <div className="text-center mb-8">
         <Link href="/" className="inline-flex items-center gap-2 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-lg">M</span>
-          </div>
+          <MedisphereLogo size={40} />
         </Link>
         <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
         <p className="text-gray-500 mt-1">Join the MediSphere healthcare ecosystem</p>
@@ -134,9 +133,9 @@ export default function RegisterPage() {
 
           <div className="text-xs text-gray-500">
             By creating an account, you agree to our{' '}
-            <Link href="#" className="text-primary-600 hover:underline">Terms of Service</Link>
+            <span className="text-primary-600 cursor-default">Terms of Service</span>
             {' '}and{' '}
-            <Link href="#" className="text-primary-600 hover:underline">Privacy Policy</Link>.
+            <span className="text-primary-600 cursor-default">Privacy Policy</span>.
           </div>
 
           <Button type="submit" isLoading={isLoading} className="w-full">

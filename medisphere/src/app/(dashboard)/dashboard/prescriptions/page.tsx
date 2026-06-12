@@ -23,7 +23,7 @@ export default function PrescriptionsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Prescriptions</h1>
           <p className="text-gray-500 mt-1">Create and manage e-prescriptions</p>
         </div>
-        <Button>
+        <Button onClick={() => alert('Coming soon')}>
           <Plus className="w-4 h-4 mr-2" />
           New Prescription
         </Button>

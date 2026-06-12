@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,7 +23,8 @@ import {
   Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import MedisphereLogo from '@/components/medisphere-logo';
+import { getStoredUser, clearStoredUser, getDisplayName, getInitials, AuthUser } from '@/lib/auth-store';
 
 interface NavItem {
   label: string;
@@ -45,31 +46,45 @@ const navigation: NavItem[] = [
   { label: 'Patient Portal', href: '/dashboard/portal', icon: UserCircle, roles: ['PATIENT'] },
 ];
 
-// Mock user - in real app this comes from auth
-const mockUser = {
-  name: 'Dr. Sarah Chen',
-  role: 'DOCTOR' as string,
-  email: 'sarah.chen@medisphere.com',
-  avatar: 'SC',
-};
+const notifications = [
+  { title: 'New lab results available', desc: 'Patient Emily Johnson', time: '5m ago', unread: true },
+  { title: 'Appointment reminder', desc: 'Michael Brown at 11:00 AM', time: '1h ago', unread: true },
+  { title: 'Prescription refill request', desc: 'Sarah Wilson - Metformin', time: '2h ago', unread: false },
+  { title: 'Staff shift change', desc: 'Nurse Amy Chen swapped with Robert Taylor', time: '3h ago', unread: false },
+];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
-  const filteredNav = navigation.filter(
-    (item) => item.roles.includes(mockUser.role)
-  );
+  useEffect(() => {
+    const stored = getStoredUser();
+    if (!stored) {
+      router.push('/login');
+      return;
+    }
+    setUser(stored);
+    setLoading(false);
+  }, [router]);
 
   const handleLogout = async () => {
+    clearStoredUser();
     router.push('/login');
   };
 
+  if (loading || !user) return null;
+
+  const filteredNav = navigation.filter((item) => item.roles.includes(user.role));
+  const initials = getInitials(user.firstName, user.lastName);
+  const displayName = getDisplayName(user);
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile overlay */}
       <AnimatePresence>
         {mobileSidebarOpen && (
           <motion.div
@@ -90,7 +105,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           'hidden lg:flex'
         )}
       >
-        {/* Logo */}
         <div className={cn(
           'h-16 flex items-center border-b border-gray-100 px-4',
           sidebarOpen ? 'justify-between' : 'justify-center'
@@ -98,9 +112,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {sidebarOpen ? (
             <>
               <Link href="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold text-sm">M</span>
-                </div>
+                <MedisphereLogo size={28} />
                 <span className="font-bold text-gray-900">MediSphere</span>
               </Link>
               <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600">
@@ -114,7 +126,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-hide">
           {filteredNav.map((item) => {
             const Icon = item.icon;
@@ -139,7 +150,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        {/* User info */}
         <div className={cn(
           'border-t border-gray-100 p-3',
           sidebarOpen ? 'space-y-2' : 'space-y-3'
@@ -148,13 +158,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             'flex items-center gap-3 p-2 rounded-lg bg-gray-50',
             !sidebarOpen && 'justify-center'
           )}>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-              {mockUser.avatar}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden">
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                initials
+              )}
             </div>
             {sidebarOpen && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{mockUser.name}</p>
-                <p className="text-xs text-gray-500 truncate">{mockUser.role}</p>
+                <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
+                <p className="text-xs text-gray-500 truncate">{user.role}</p>
               </div>
             )}
           </div>
@@ -182,9 +196,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100">
               <Link href="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">M</span>
-                </div>
+                <MedisphereLogo size={28} />
                 <span className="font-bold text-gray-900">MediSphere</span>
               </Link>
               <button onClick={() => setMobileSidebarOpen(false)} className="text-gray-400 hover:text-gray-600">
@@ -229,7 +241,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         'transition-all duration-300',
         sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'
       )}>
-        {/* Top bar */}
         <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
           <div className="flex items-center gap-3">
             <button
@@ -249,23 +260,61 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+              </button>
+              {notificationsOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setNotificationsOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
+                    <div className="p-3 border-b border-gray-100">
+                      <p className="text-sm font-semibold text-gray-900">Notifications</p>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {notifications.map((n, i) => (
+                        <div
+                          key={i}
+                          className={`flex items-start gap-3 p-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors ${n.unread ? 'bg-blue-50/30' : ''}`}
+                        >
+                          <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.unread ? 'bg-blue-500' : 'bg-gray-300'}`} />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{n.title}</p>
+                            <p className="text-xs text-gray-500">{n.desc}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">{n.time}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-2 border-t border-gray-100">
+                      <button className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium py-1.5">
+                        View All Notifications
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
             <div className="flex items-center gap-2 pl-3 border-l border-gray-200">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-bold">
-                {mockUser.avatar}
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  initials
+                )}
               </div>
               <div className="hidden sm:block">
-                <p className="text-sm font-medium text-gray-900">{mockUser.name}</p>
-                <p className="text-xs text-gray-500">{mockUser.role}</p>
+                <p className="text-sm font-medium text-gray-900">{displayName}</p>
+                <p className="text-xs text-gray-500">{user.role}</p>
               </div>
             </div>
           </div>
         </header>
 
-        {/* Page content */}
         <main className="p-4 lg:p-6">
           {children}
         </main>

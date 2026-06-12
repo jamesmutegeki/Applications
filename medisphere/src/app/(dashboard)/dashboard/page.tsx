@@ -1,6 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Calendar,
   Users,
@@ -14,13 +16,10 @@ import {
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { getStoredUser } from '@/lib/auth-store';
+import type { AuthUser } from '@/lib/auth-store';
 
 type Role = 'PATIENT' | 'DOCTOR' | 'NURSE' | 'ADMIN' | 'BILLING';
-
-const mockUser = {
-  name: 'Dr. Sarah Chen',
-  role: 'DOCTOR' as Role,
-};
 
 const statsConfig: Record<Role, { label: string; value: string; icon: any; change: string; color: string }[]> = {
   PATIENT: [
@@ -69,7 +68,21 @@ const alerts = [
 ];
 
 export default function DashboardPage() {
-  const role = mockUser.role;
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const stored = getStoredUser();
+    if (!stored) {
+      router.push('/login');
+      return;
+    }
+    setUser(stored);
+  }, [router]);
+
+  if (!user) return null;
+
+  const role = user.role as Role;
   const stats = statsConfig[role];
 
   return (
@@ -77,7 +90,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
-          Good morning, {mockUser.name.split(' ')[0]}
+          Good morning, {user.firstName}
         </h1>
         <p className="text-gray-500 mt-1">
           Here&apos;s your overview for today

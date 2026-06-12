@@ -7,18 +7,59 @@ import { useRouter } from 'next/navigation';
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { storeUser, getInitials } from '@/lib/auth-store';
+import MedisphereLogo from '@/components/medisphere-logo';
+
+interface SeedUser {
+  email: string;
+  password: string;
+  id: string;
+  firstName: string;
+  lastName: string;
+  role: 'PATIENT' | 'DOCTOR' | 'NURSE' | 'ADMIN' | 'BILLING';
+}
+
+const seedUsers: SeedUser[] = [
+  { email: 'admin@medisphere.com', password: 'password123', id: '1', firstName: 'Admin', lastName: 'User', role: 'ADMIN' },
+  { email: 'sarah.chen@medisphere.com', password: 'password123', id: '2', firstName: 'Sarah', lastName: 'Chen', role: 'DOCTOR' },
+  { email: 'amy.chen@medisphere.com', password: 'password123', id: '3', firstName: 'Amy', lastName: 'Chen', role: 'NURSE' },
+  { email: 'john.smith@email.com', password: 'password123', id: '4', firstName: 'John', lastName: 'Smith', role: 'PATIENT' },
+  { email: 'billing@medisphere.com', password: 'password123', id: '5', firstName: 'Billing', lastName: 'Officer', role: 'BILLING' },
+  { email: 'emily.j@email.com', password: 'password123', id: '6', firstName: 'Emily', lastName: 'Johnson', role: 'PATIENT' },
+  { email: 'michael.b@email.com', password: 'password123', id: '7', firstName: 'Michael', lastName: 'Brown', role: 'PATIENT' },
+];
 
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
-    // Simulate auth delay
-    await new Promise((r) => setTimeout(r, 1000));
+
+    await new Promise((r) => setTimeout(r, 800));
+
+    const user = seedUsers.find((u) => u.email === formData.email);
+
+    if (!user || user.password !== formData.password) {
+      setError('Invalid credentials');
+      setIsLoading(false);
+      return;
+    }
+
+    storeUser({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}${user.lastName}`,
+    });
+
     setIsLoading(false);
     router.push('/dashboard');
   };
@@ -31,9 +72,7 @@ export default function LoginPage() {
     >
       <div className="text-center mb-8">
         <Link href="/" className="inline-flex items-center gap-2 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-lg">M</span>
-          </div>
+          <MedisphereLogo size={40} />
         </Link>
         <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
         <p className="text-gray-500 mt-1">Sign in to your MediSphere account</p>
@@ -41,6 +80,12 @@ export default function LoginPage() {
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
         <form onSubmit={handleSubmit} className="space-y-5">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
           <Input
             label="Email"
             type="email"
@@ -75,9 +120,9 @@ export default function LoginPage() {
               <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
               <span className="text-gray-600">Remember me</span>
             </label>
-            <Link href="#" className="text-primary-600 hover:text-primary-700 font-medium">
+            <span className="text-gray-400 cursor-default text-sm">
               Forgot password?
-            </Link>
+            </span>
           </div>
 
           <Button type="submit" isLoading={isLoading} className="w-full">
@@ -86,21 +131,26 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-gray-100 text-center">
-          <p className="text-sm text-gray-500">
+        <div className="mt-6 pt-6 border-t border-gray-100">
+          <p className="text-sm text-gray-500 text-center">
             Don&apos;t have an account?{' '}
             <Link href="/register" className="text-primary-600 hover:text-primary-700 font-medium">
               Create one
             </Link>
           </p>
-        </div>
 
-        {/* Demo credentials */}
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500">
-          <p className="font-medium text-gray-700 mb-1">Demo Accounts:</p>
-          <p>Admin: admin@medisphere.com / password123</p>
-          <p>Doctor: doctor@medisphere.com / password123</p>
-          <p>Patient: patient@medisphere.com / password123</p>
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-500">
+            <p className="font-medium text-gray-700 mb-2">Demo Accounts (password123):</p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+              <p><span className="text-blue-600 font-medium">Admin</span> — admin@medisphere.com</p>
+              <p><span className="text-emerald-600 font-medium">Doctor</span> — sarah.chen@medisphere.com</p>
+              <p><span className="text-purple-600 font-medium">Nurse</span> — amy.chen@medisphere.com</p>
+              <p><span className="text-amber-600 font-medium">Billing</span> — billing@medisphere.com</p>
+              <p><span className="text-gray-600 font-medium">Patient</span> — john.smith@email.com</p>
+              <p><span className="text-gray-600 font-medium">Patient</span> — emily.j@email.com</p>
+              <p><span className="text-gray-600 font-medium">Patient</span> — michael.b@email.com</p>
+            </div>
+          </div>
         </div>
       </div>
     </motion.div>
